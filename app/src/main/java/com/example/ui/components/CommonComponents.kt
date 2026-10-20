@@ -107,8 +107,12 @@ fun XPillButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    compact: Boolean = false
 ) {
+    val horizontalPad = if (compact) 12.dp else 16.dp
+    val verticalPad = if (compact) 6.dp else 8.dp
+    val minHeight = if (compact) 36.dp else 40.dp
     Button(
         onClick = onClick,
         enabled = enabled,
@@ -119,9 +123,9 @@ fun XPillButton(
             disabledContainerColor = ColorCanvasMid,
             disabledContentColor = ColorBodyMid
         ),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+        contentPadding = PaddingValues(horizontal = horizontalPad, vertical = verticalPad),
         modifier = modifier
-            .heightIn(min = 40.dp)
+            .heightIn(min = minHeight)
             .border(width = 1.dp, color = ColorPrimary, shape = CircleShape)
     ) {
         if (icon != null) {
