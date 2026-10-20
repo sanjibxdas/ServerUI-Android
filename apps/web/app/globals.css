@@ -1,0 +1,1806 @@
+@import "tailwindcss";
+
+:root,
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #1b2430;
+  --foreground: #edf2f7;
+  --topbar-bg: rgba(0, 0, 0, 0.28);
+  --topbar-fg: rgba(255, 255, 255, 0.92);
+  --topbar-muted: rgba(255, 255, 255, 0.62);
+  --toggle-bg: rgba(255, 255, 255, 0.12);
+  --toggle-active: rgba(255, 255, 255, 0.92);
+  --toggle-active-fg: #111111;
+  --app-bg: rgba(28, 28, 30, 0.92);
+  --app-bg-2: rgba(255, 255, 255, 0.04);
+  --app-sidebar: rgba(22, 22, 24, 0.9);
+  --app-fg: #f2f2f7;
+  --app-title: #ffffff;
+  --app-muted: #c7c7cc;
+  --app-card: rgba(255, 255, 255, 0.08);
+  --app-input: rgba(255, 255, 255, 0.16);
+  --app-border: rgba(255, 255, 255, 0.12);
+  --app-hover: rgba(255, 255, 255, 0.08);
+  --app-selected: rgba(10, 132, 255, 0.28);
+  --window-bg: rgba(28, 28, 30, 0.94);
+  --window-header: rgba(255, 255, 255, 0.04);
+  --window-header-inactive: rgba(255, 255, 255, 0.02);
+  --window-title: rgba(255, 255, 255, 0.86);
+  --window-border: rgba(255, 255, 255, 0.16);
+  --menu-bg: rgba(32, 32, 34, 0.92);
+  --menu-fg: #f2f2f7;
+  --menu-border: rgba(255, 255, 255, 0.12);
+  --finder-sidebar: rgba(40, 40, 43, 0.94);
+  --finder-toolbar: #2a2a2c;
+  --finder-content: #1e1e1e;
+  --finder-hairline: rgba(255, 255, 255, 0.09);
+  --finder-text: #e8e8ed;
+  --finder-muted: #98989f;
+  --finder-section: rgba(235, 235, 245, 0.42);
+  --finder-nav-hover: rgba(255, 255, 255, 0.06);
+  --finder-nav-active: rgba(255, 255, 255, 0.12);
+  --finder-tile-selected: rgba(255, 255, 255, 0.1);
+  --finder-control: rgba(255, 255, 255, 0.06);
+  --finder-control-border: rgba(255, 255, 255, 0.1);
+  --finder-control-hover: rgba(255, 255, 255, 0.12);
+  --finder-segment: rgba(0, 0, 0, 0.28);
+  --finder-segment-active: rgba(255, 255, 255, 0.16);
+  --finder-search: rgba(255, 255, 255, 0.08);
+  --finder-stripe: rgba(255, 255, 255, 0.035);
+  --finder-accent: #0a84ff;
+  --dock-glass: rgba(70, 70, 76, 0.32);
+  --dock-glass-hover: rgba(80, 80, 86, 0.38);
+  --dock-border: rgba(255, 255, 255, 0.16);
+  --traffic-idle: #4c4c51;
+  --chart-grid: rgba(255, 255, 255, 0.06);
+  --chart-grid-strong: rgba(255, 255, 255, 0.08);
+  --chart-guide: rgba(255, 255, 255, 0.4);
+  --chart-label: rgba(255, 255, 255, 0.35);
+  --chart-label-strong: rgba(255, 255, 255, 0.45);
+  --desktop-scrim: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.22),
+    transparent,
+    rgba(0, 0, 0, 0.28)
+  );
+}
+
+html[data-theme="light"] {
+  color-scheme: light;
+  --background: #c5d4e4;
+  --foreground: #1d1d1f;
+  --topbar-bg: rgba(255, 255, 255, 0.58);
+  --topbar-fg: #1d1d1f;
+  --topbar-muted: rgba(29, 29, 31, 0.58);
+  --toggle-bg: rgba(0, 0, 0, 0.08);
+  --toggle-active: #ffffff;
+  --toggle-active-fg: #1d1d1f;
+  --app-bg: rgba(246, 246, 247, 0.94);
+  --app-bg-2: rgba(255, 255, 255, 0.55);
+  --app-sidebar: rgba(236, 236, 239, 0.94);
+  --app-fg: #1d1d1f;
+  --app-title: #111111;
+  --app-muted: #6b7280;
+  --app-card: rgba(255, 255, 255, 0.48);
+  --app-input: rgba(255, 255, 255, 0.62);
+  --app-border: rgba(0, 0, 0, 0.08);
+  --app-hover: rgba(14, 165, 233, 0.08);
+  --app-selected: rgba(14, 165, 233, 0.16);
+  --window-bg: rgba(246, 246, 247, 0.96);
+  --window-header: rgba(255, 255, 255, 0.28);
+  --window-header-inactive: rgba(255, 255, 255, 0.14);
+  --window-title: #3f3f46;
+  --window-border: rgba(255, 255, 255, 0.55);
+  --menu-bg: rgba(255, 255, 255, 0.94);
+  --menu-fg: #1d1d1f;
+  --menu-border: rgba(0, 0, 0, 0.1);
+  --finder-sidebar: rgba(240, 240, 242, 0.95);
+  --finder-toolbar: #f6f6f6;
+  --finder-content: #ffffff;
+  --finder-hairline: #e3e3e5;
+  --finder-text: #1d1d1f;
+  --finder-muted: #6e6e73;
+  --finder-section: #6e6e73;
+  --finder-nav-hover: rgba(0, 0, 0, 0.04);
+  --finder-nav-active: rgba(0, 0, 0, 0.08);
+  --finder-tile-selected: rgba(0, 0, 0, 0.06);
+  --finder-control: #ffffff;
+  --finder-control-border: #d6d6d9;
+  --finder-control-hover: #f2f2f4;
+  --finder-segment: #e9e9eb;
+  --finder-segment-active: #ffffff;
+  --finder-search: #e9e9eb;
+  --finder-stripe: #f5f5f7;
+  --finder-accent: #007aff;
+  --dock-glass: rgba(255, 255, 255, 0.2);
+  --dock-glass-hover: rgba(255, 255, 255, 0.26);
+  --dock-border: rgba(255, 255, 255, 0.38);
+  --traffic-idle: #d1d1d6;
+  --chart-grid: rgba(0, 0, 0, 0.08);
+  --chart-grid-strong: rgba(0, 0, 0, 0.12);
+  --chart-guide: rgba(0, 0, 0, 0.28);
+  --chart-label: rgba(0, 0, 0, 0.45);
+  --chart-label-strong: rgba(0, 0, 0, 0.55);
+  --desktop-scrim: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.18),
+    transparent,
+    rgba(0, 0, 0, 0.12)
+  );
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+body {
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+.sui-app {
+  background: transparent;
+  color: var(--app-fg);
+}
+
+.sui-app-2 {
+  background: var(--app-bg-2);
+}
+
+.sui-sidebar {
+  background: var(--app-sidebar);
+  color: var(--app-fg);
+  border-right: 1px solid var(--app-border);
+  backdrop-filter: blur(20px) saturate(1.25);
+  -webkit-backdrop-filter: blur(20px) saturate(1.25);
+}
+
+.sui-toolbar {
+  background: var(--app-bg-2);
+}
+
+.sui-window-glass {
+  background: var(--window-bg);
+  border-color: var(--window-border);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 24px 80px rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+}
+
+.sui-terminal {
+  background: rgba(10, 10, 12, 0.82);
+}
+
+.sui-window-header {
+  background: var(--window-header);
+  border-bottom: 1px solid var(--app-border);
+}
+
+.sui-terminal .xterm,
+.sui-terminal .xterm-viewport,
+.sui-terminal .xterm-screen {
+  background: transparent !important;
+}
+
+.sui-title {
+  color: var(--app-title);
+}
+
+.sui-muted {
+  color: var(--app-muted);
+}
+
+.sui-card {
+  background: var(--app-card);
+  border: 1px solid var(--app-border);
+}
+
+.sui-glass-card {
+  background: var(--app-card);
+  border: 1px solid var(--app-border);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(22px) saturate(1.35);
+  -webkit-backdrop-filter: blur(22px) saturate(1.35);
+}
+
+.sui-input {
+  background: var(--app-input);
+  border: 1px solid var(--app-border);
+  color: var(--app-fg);
+}
+
+.sui-hairline {
+  border-color: var(--app-border);
+}
+
+.sui-hover:hover {
+  background: var(--app-hover);
+}
+
+.sui-selected {
+  background: var(--app-selected);
+}
+
+.sui-menu {
+  background: var(--menu-bg);
+  color: var(--menu-fg);
+  border-color: var(--menu-border);
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+}
+
+@keyframes window-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-window-in {
+  animation: window-in 140ms ease-out;
+}
+
+.animate-menu-in {
+  animation: menu-in 120ms ease-out;
+}
+
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes boot-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes desktop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.992);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-overlay-in {
+  animation: overlay-in 160ms ease-out;
+}
+
+.animate-modal-in {
+  animation: modal-in 180ms ease-out;
+}
+
+.animate-card-in {
+  animation: card-in 220ms ease-out;
+}
+
+.animate-boot-in {
+  animation: boot-in 280ms ease-out;
+}
+
+.animate-desktop-in {
+  animation: desktop-in 220ms ease-out;
+}
+
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(-14px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes pane-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-sheet-in {
+  animation: sheet-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.animate-pane-in {
+  animation: pane-in 180ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+.sui-server-input {
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid var(--finder-control-border);
+  background: var(--finder-search);
+  padding: 0.45rem 0.7rem;
+  font-size: 13px;
+  color: var(--finder-text);
+  outline: none;
+  transition:
+    border-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.sui-server-input::placeholder {
+  color: var(--finder-muted);
+}
+
+.sui-server-input:focus {
+  border-color: var(--finder-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--finder-accent) 25%, transparent);
+}
+
+.sui-server-input[aria-invalid="true"] {
+  border-color: rgba(248, 113, 113, 0.65);
+}
+
+.sui-server-input[aria-invalid="true"]:focus {
+  border-color: rgba(248, 113, 113, 0.85);
+  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.16);
+}
+
+.sui-server-input option {
+  color: #111;
+}
+
+.sui-dock {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  padding: 5px 6px 4px;
+  border-radius: 18px;
+  border: 1px solid var(--dock-border);
+  background: var(--dock-glass);
+  box-shadow:
+    0 12px 36px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(24px) saturate(1.8);
+  -webkit-backdrop-filter: blur(24px) saturate(1.8);
+  box-sizing: border-box;
+  transition: background-color 160ms ease;
+}
+
+.sui-dock:hover {
+  background: var(--dock-glass-hover);
+}
+
+.sui-dock-slot {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 1px;
+  background: transparent;
+  overflow: visible;
+}
+
+.sui-dock-slot:focus-visible .sui-dock-icon {
+  box-shadow:
+    0 0 0 2px rgba(255, 255, 255, 0.88),
+    0 4px 10px rgba(0, 0, 0, 0.28);
+}
+
+.sui-dock-motion {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  will-change: transform;
+  overflow: visible;
+}
+
+.sui-dock-lift {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform-origin: 50% 100%;
+  will-change: transform;
+}
+
+.sui-dock-icon-shell {
+  position: relative;
+  display: block;
+  flex: none;
+  transform: scale(var(--dock-scale, 1));
+  transform-origin: 50% 100%;
+  will-change: transform;
+}
+
+.sui-dock-icon {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: hidden;
+  border-radius: 22%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+}
+
+.sui-mac-app-icon {
+  display: block;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 22%;
+}
+
+.sui-mac-dusk-glyph {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+.sui-dock-indicator {
+  flex: none;
+  margin-top: 2px;
+  height: 4px;
+  width: 4px;
+  border-radius: 999px;
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.6);
+  transition:
+    opacity 140ms ease,
+    background-color 140ms ease;
+}
+
+.sui-dock-separator {
+  position: absolute;
+  left: calc((1 - var(--dock-scale, 1)) * 50% - 7px);
+  top: 6px;
+  height: 36px;
+  width: 1px;
+  border-radius: 1px;
+  background: rgba(255, 255, 255, 0.24);
+  pointer-events: none;
+}
+
+.sui-dock-slot:has(.sui-dock-separator) {
+  margin-left: 4px;
+  padding-left: 8px;
+}
+
+/* Dark tooltip bubble shared by the Dock and the Files toolbar. */
+.sui-dock-tooltip,
+.sui-toolbar-tip {
+  pointer-events: none;
+  position: absolute;
+  left: 50%;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(17, 24, 39, 0.95);
+  color: #fff;
+  font-weight: 500;
+  white-space: nowrap;
+  opacity: 0;
+}
+
+.sui-dock-tooltip::after,
+.sui-toolbar-tip::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  translate: -50% 0;
+  rotate: 45deg;
+  background: rgba(17, 24, 39, 0.95);
+}
+
+.sui-dock-tooltip {
+  bottom: calc(100% + 10px);
+  z-index: 2;
+  padding: 4px 12px;
+  font-size: 12px;
+  letter-spacing: 0.01em;
+  transform: translateX(calc(var(--dock-tooltip-x, 0px) - 50%))
+    translateY(calc(var(--dock-tooltip-y, 0px) + 6px));
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease;
+  backdrop-filter: blur(16px) saturate(1.2);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+}
+
+.sui-dock-tooltip::after {
+  bottom: -5px;
+  width: 8px;
+  height: 8px;
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.sui-dock-tooltip[data-show="true"] {
+  opacity: 1;
+  transform: translateX(calc(var(--dock-tooltip-x, 0px) - 50%))
+    translateY(var(--dock-tooltip-y, 0px));
+}
+
+.sui-dock-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #ff3b30;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+  box-shadow: 0 0 0 2px rgba(20, 22, 26, 0.35);
+  animation: dock-badge-in 280ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dock-bounce {
+  0% {
+    translate: 0 0;
+  }
+  28% {
+    translate: 0 4px;
+  }
+  52% {
+    translate: 0 -14px;
+  }
+  72% {
+    translate: 0 -4px;
+  }
+  100% {
+    translate: 0 0;
+  }
+}
+
+.sui-dock-bounce {
+  animation: dock-bounce 380ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes dock-badge-in {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.sui-folder-paper {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  transition: transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sui-folder-paper-a {
+  transform: translateY(8px) rotate(3deg);
+}
+
+.sui-folder-paper-b {
+  transform: translateY(6px) rotate(-2deg);
+}
+
+.sui-folder-tab {
+  transform-box: fill-box;
+  transform-origin: 20% 100%;
+  transition: transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sui-dock-slot:hover .sui-folder-paper-a,
+.sui-mac-app-icon:hover .sui-folder-paper-a {
+  transform: translateY(-16px) rotate(6deg);
+}
+
+.sui-dock-slot:hover .sui-folder-paper-b,
+.sui-mac-app-icon:hover .sui-folder-paper-b {
+  transform: translateY(-20px) rotate(-8deg);
+}
+
+.sui-dock-slot:hover .sui-folder-tab,
+.sui-mac-app-icon:hover .sui-folder-tab {
+  transform: translateY(-2px);
+}
+
+.sui-term-prompt,
+.sui-term-underscore,
+.sui-term-ch,
+.sui-term-cursor {
+  transform-box: fill-box;
+  transition:
+    transform 280ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 180ms ease;
+}
+
+.sui-term-prompt {
+  transform-origin: 20% 50%;
+}
+
+.sui-term-underscore {
+  transform-origin: 0% 50%;
+}
+
+.sui-term-ch,
+.sui-term-cursor {
+  opacity: 0;
+}
+
+.sui-term-ch-1 {
+  transform: translateX(-6px);
+}
+
+.sui-term-ch-2 {
+  transform: translateX(-4px);
+}
+
+.sui-term-ch-3 {
+  transform: translateX(-2px);
+}
+
+.sui-dock-slot:hover .sui-term-prompt,
+.sui-mac-app-icon:hover .sui-term-prompt {
+  transform: translateX(-2px);
+}
+
+.sui-dock-slot:hover .sui-term-underscore,
+.sui-mac-app-icon:hover .sui-term-underscore {
+  opacity: 0;
+  transform: scaleX(0.15);
+}
+
+.sui-dock-slot:hover .sui-term-ch,
+.sui-mac-app-icon:hover .sui-term-ch {
+  opacity: 1;
+  transform: none;
+}
+
+.sui-dock-slot:hover .sui-term-ch-1,
+.sui-mac-app-icon:hover .sui-term-ch-1 {
+  transition-delay: 40ms;
+}
+
+.sui-dock-slot:hover .sui-term-ch-2,
+.sui-mac-app-icon:hover .sui-term-ch-2 {
+  transition-delay: 110ms;
+}
+
+.sui-dock-slot:hover .sui-term-ch-3,
+.sui-mac-app-icon:hover .sui-term-ch-3 {
+  transition-delay: 180ms;
+}
+
+.sui-dock-slot:hover .sui-term-cursor,
+.sui-mac-app-icon:hover .sui-term-cursor {
+  opacity: 1;
+  transition-delay: 240ms;
+  animation: sui-term-blink 900ms step-end 240ms infinite;
+}
+
+@keyframes sui-term-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.sui-settings-gear {
+  transform-box: view-box;
+  transform-origin: 50px 50px;
+  transition: transform 520ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sui-dock-slot:hover .sui-settings-gear,
+.sui-mac-app-icon:hover .sui-settings-gear {
+  transform: rotate(50deg);
+}
+
+.sui-info-icon {
+  background: rgba(12, 12, 14, 0.58);
+  backdrop-filter: blur(22px) saturate(1.35);
+  -webkit-backdrop-filter: blur(22px) saturate(1.35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.sui-info-ring,
+.sui-info-dot,
+.sui-info-stem,
+.sui-info-ripple {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  transition:
+    transform 420ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 280ms ease;
+}
+
+.sui-info-ripple {
+  opacity: 0;
+  transform: scale(0.82);
+}
+
+.sui-dock-slot:hover .sui-info-ripple,
+.sui-mac-app-icon:hover .sui-info-ripple {
+  opacity: 0.55;
+  transform: scale(1);
+}
+
+.sui-dock-slot:hover .sui-info-ring,
+.sui-mac-app-icon:hover .sui-info-ring {
+  transform: scale(0.94);
+}
+
+.sui-dock-slot:hover .sui-info-dot,
+.sui-mac-app-icon:hover .sui-info-dot {
+  transform: translateY(-4px);
+}
+
+.sui-dock-slot:hover .sui-info-stem,
+.sui-mac-app-icon:hover .sui-info-stem {
+  transform: translateY(3px);
+}
+
+.sui-editor-bracket,
+.sui-editor-zero,
+.sui-editor-caret {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  transition: transform 380ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.sui-dock-slot:hover .sui-editor-bracket-l,
+.sui-mac-app-icon:hover .sui-editor-bracket-l {
+  transform: translateX(6px);
+}
+
+.sui-dock-slot:hover .sui-editor-bracket-r,
+.sui-mac-app-icon:hover .sui-editor-bracket-r {
+  transform: translateX(-6px);
+}
+
+.sui-dock-slot:hover .sui-editor-zero,
+.sui-mac-app-icon:hover .sui-editor-zero {
+  transform: scale(0.96);
+}
+
+.sui-dock-slot:hover .sui-editor-caret,
+.sui-mac-app-icon:hover .sui-editor-caret {
+  animation: sui-editor-blink 900ms step-end infinite;
+}
+
+@keyframes sui-editor-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.sui-editor-hero {
+  border-radius: 22%;
+  box-shadow: 0 12px 40px rgba(255, 176, 0, 0.22);
+}
+
+.sui-editor-hero .sui-mac-app-icon {
+  filter: drop-shadow(0 0 18px rgba(255, 176, 0, 0.35));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-sheet-in,
+  .animate-pane-in,
+  .animate-modal-in,
+  .animate-menu-in,
+  .animate-card-in {
+    animation: none;
+  }
+
+  .sui-dock-bounce,
+  .sui-dock-badge {
+    animation: none;
+  }
+
+  .sui-folder-paper,
+  .sui-folder-tab,
+  .sui-term-prompt,
+  .sui-term-underscore,
+  .sui-term-ch,
+  .sui-term-cursor,
+  .sui-settings-gear,
+  .sui-info-ring,
+  .sui-info-dot,
+  .sui-info-stem,
+  .sui-info-ripple,
+  .sui-editor-bracket,
+  .sui-editor-zero,
+  .sui-editor-caret {
+    transition: none;
+  }
+
+  .sui-dock-slot:hover .sui-term-cursor,
+  .sui-mac-app-icon:hover .sui-term-cursor,
+  .sui-dock-slot:hover .sui-editor-caret,
+  .sui-mac-app-icon:hover .sui-editor-caret {
+    animation: none;
+    opacity: 1;
+  }
+
+  .sui-dock-tooltip {
+    transition: none;
+  }
+}
+
+/* ---- Files: Finder look (adapted from MacOS-Web-Simulator, MIT) ---- */
+.sui-finder {
+  color: var(--finder-text);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", var(--font-sans), sans-serif;
+}
+
+.sui-finder-sidebar {
+  background: var(--finder-sidebar);
+  border-right: 1px solid var(--finder-hairline);
+}
+
+.sui-finder-toolbar,
+.sui-finder-sheet {
+  background: var(--finder-toolbar);
+  border-bottom: 1px solid var(--finder-hairline);
+}
+
+.sui-finder-muted {
+  color: var(--finder-muted);
+}
+
+.sui-finder-nav-item {
+  transition: background-color 120ms ease;
+}
+
+.sui-finder-nav-item:hover {
+  background: var(--finder-nav-hover);
+}
+
+.sui-finder-nav-item[data-active="true"] {
+  background: var(--finder-nav-active);
+  font-weight: 500;
+}
+
+.sui-finder-control {
+  color: var(--finder-muted);
+  background: var(--finder-control);
+  border: 1px solid var(--finder-control-border);
+  transition: background-color 120ms ease;
+}
+
+.sui-finder-control:enabled:hover {
+  background: var(--finder-control-hover);
+  color: var(--finder-text);
+}
+
+.sui-finder-plain-button {
+  color: var(--finder-muted);
+}
+
+.sui-finder-plain-button:enabled:hover {
+  background: var(--finder-nav-hover);
+  color: var(--finder-text);
+}
+
+.sui-finder-segment {
+  background: var(--finder-segment);
+  border: 1px solid var(--finder-control-border);
+}
+
+.sui-finder-segment-button {
+  color: var(--finder-muted);
+}
+
+.sui-finder-segment-button[data-active="true"] {
+  background: var(--finder-segment-active);
+  color: var(--finder-text);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.14);
+}
+
+.sui-finder-search {
+  background: var(--finder-search);
+  border: 1px solid transparent;
+}
+
+.sui-finder-search:focus {
+  border-color: var(--finder-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--finder-accent) 25%, transparent);
+}
+
+.sui-finder-search::placeholder {
+  color: var(--finder-muted);
+}
+
+.sui-finder-list-head th {
+  background: var(--finder-content);
+  color: var(--finder-muted);
+  border-bottom: 1px solid var(--finder-hairline);
+}
+
+.sui-finder-rows .sui-finder-row:nth-child(even) {
+  background: var(--finder-stripe);
+}
+
+.sui-finder-rows .sui-finder-row[data-selected="true"] {
+  background: var(--finder-accent);
+  color: #ffffff;
+}
+
+.sui-finder-rows .sui-finder-row[data-selected="true"] .sui-finder-muted {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.sui-finder-rows .sui-finder-row[data-drop="true"] {
+  background: color-mix(in srgb, var(--finder-accent) 22%, transparent);
+  outline: 2px solid var(--finder-accent);
+  outline-offset: -2px;
+}
+
+.sui-finder-marquee {
+  border: 1px solid color-mix(in srgb, var(--finder-accent) 70%, transparent);
+  background: color-mix(in srgb, var(--finder-accent) 18%, transparent);
+}
+
+/* Toolbar hover labels (Files), shown below the control. */
+.sui-toolbar-tip {
+  top: calc(100% + 7px);
+  z-index: 60;
+  padding: 3px 8px;
+  font-size: 11.5px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+  translate: -50% -2px;
+  transition:
+    opacity 120ms ease,
+    translate 120ms ease;
+}
+
+.sui-toolbar-tip::before {
+  top: -4px;
+  width: 7px;
+  height: 7px;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.group\/tip:hover > .sui-toolbar-tip,
+.group\/tip:has(:focus-visible) > .sui-toolbar-tip {
+  opacity: 1;
+  translate: -50% 0;
+  transition-delay: 450ms;
+}
+
+.group\/tip:has(:focus-visible) > .sui-toolbar-tip {
+  transition-delay: 0ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sui-toolbar-tip {
+    transition: none;
+  }
+}
+
+/* Window traffic lights: flat macOS circles with a hairline rim and a soft
+   top highlight; glyphs only appear while the group is hovered. */
+.sui-traffic-light {
+  background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.16), rgba(0, 0, 0, 0.04));
+  box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.22);
+}
+
+/* Light windows keep the same utilities, but white ink becomes dark ink.
+   The terminal resets these so its shell stays light on black. */
+html[data-theme="light"] .sui-window-glass .text-white\/25,
+html[data-theme="light"] .sui-menu .text-white\/25 {
+  color: color-mix(in srgb, var(--app-fg) 25%, transparent);
+}
+html[data-theme="light"] .sui-window-glass .text-white\/28,
+html[data-theme="light"] .sui-menu .text-white\/28 {
+  color: color-mix(in srgb, var(--app-fg) 28%, transparent);
+}
+html[data-theme="light"] .sui-window-glass .text-white\/30,
+html[data-theme="light"] .sui-menu .text-white\/30 {
+  color: color-mix(in srgb, var(--app-fg) 30%, transparent);
+}
+html[data-theme="light"] .sui-window-glass .text-white\/35,
+html[data-theme="light"] .sui-menu .text-white\/35 {
+  color: color-mix(in srgb, var(--app-fg) 35%, transparent);
+}
+html[data-theme="light"] .sui-window-glass .text-white\/40,
+html[data-theme="light"] .sui-menu .text-white\/40 {
+  color: color-mix(in srgb, var(--app-fg) 40%, transparent);
+}
+html[data-theme="light"] .sui-window-glass .text-white\/42,
+html[data-theme="light"] .sui-menu .text-white\/42 {
+  color: color-mix(in srgb, var(--app-fg) 42%, transparent);
+}
+html[data-theme="light"] .sui-window-glass .text-white\/45,
+html[data-theme="light"] .sui-menu .text-white\/45 {
+  color: color-mix(in srgb, var(--app-fg) 45%, transparent);
+}
+html[data-theme="light"] .sui-window-glass .text-white\/48,
+html[data-theme="light"] .sui-menu .text-white\/48 {
+  color: color-mix(in srgb, var(--app-fg) 48%, transparent);
+}
+html[data-theme="light"] .sui-window-glass .text-white\/50,
+html[data-theme="light"] .sui-menu .text-white\/50 {
+  color: color-mix(in srgb, var(--app-fg) 50%, transparent);
+}
+html[data-theme="light"] .sui-window-glass .text-white\/55,
+html[data-theme="light"] .sui-menu .text-white\/55 {
+  color: color-mix(in srgb, var(--app-fg) 55%, transparent);
+}
+html[data-theme="light"] .sui-window-glass .text-white\/58,
+html[data-theme="light"] .sui-menu .text-white\/58 {
+  color: color-mix(in srgb, var(--app-fg) 58%, transparent);
+}
+html[data-theme="light"] .sui-window-glass .text-white\/60,
+html[data-theme="light"] .sui-menu .text-white\/60 {
+  color: color-mix(in srgb, var(--app-fg) 60%, transparent);
+}
+html[data-theme="light"] .sui-window-glass .text-white\/62,
+html[data-theme="light"] .sui-menu .text-white\/62 {
+  color: color-mix(in srgb, var(--app-fg) 62%, transparent);
+}
+html[data-theme="light"] .sui-window-glass .text-white\/70,
+html[data-theme="light"] .sui-menu .text-white\/70 {
+  color: color-mix(in srgb, var(--app-fg) 70%, transparent);
+}
+html[data-theme="light"] .sui-window-glass .text-white\/75,
+html[data-theme="light"] .sui-menu .text-white\/75 {
+  color: color-mix(in srgb, var(--app-fg) 75%, transparent);
+}
+html[data-theme="light"] .sui-window-glass .text-white\/78,
+html[data-theme="light"] .sui-menu .text-white\/78 {
+  color: color-mix(in srgb, var(--app-fg) 78%, transparent);
+}
+html[data-theme="light"] .sui-window-glass .text-white\/80,
+html[data-theme="light"] .sui-menu .text-white\/80 {
+  color: color-mix(in srgb, var(--app-fg) 80%, transparent);
+}
+html[data-theme="light"] .sui-window-glass .text-white\/85,
+html[data-theme="light"] .sui-menu .text-white\/85 {
+  color: color-mix(in srgb, var(--app-fg) 85%, transparent);
+}
+html[data-theme="light"] .sui-window-glass .text-white\/90,
+html[data-theme="light"] .sui-menu .text-white\/90 {
+  color: color-mix(in srgb, var(--app-fg) 90%, transparent);
+}
+html[data-theme="light"] .sui-window-glass .text-white,
+html[data-theme="light"] .sui-menu .text-white,
+html[data-theme="light"] .sui-window-glass .hover\:text-white:hover,
+html[data-theme="light"] .sui-menu .hover\:text-white:hover {
+  color: var(--app-fg);
+}
+html[data-theme="light"]
+  .sui-window-glass
+  :is(
+    .bg-\[\#2b7fff\],
+    .bg-red-500,
+    .bg-red-600,
+    .bg-red-700,
+    .bg-black\/80,
+    .bg-\[var\(--finder-accent\)\]
+  ),
+html[data-theme="light"] .sui-window-glass button[style*="background"],
+html[data-theme="light"]
+  .sui-menu
+  :is(.hover\:bg-sky-500:hover, .focus-visible\:bg-sky-500:focus-visible),
+html[data-theme="light"]
+  .sui-window-glass
+  :is(
+    .enabled\:hover\:bg-\[var\(--finder-accent\)\]:hover,
+    .focus-visible\:bg-\[var\(--finder-accent\)\]:focus-visible
+  ) {
+  color: #fff;
+}
+
+html[data-theme="light"] .sui-window-glass .bg-white\/4,
+html[data-theme="light"] .sui-menu .bg-white\/4 {
+  background-color: color-mix(in srgb, var(--app-fg) 4%, transparent);
+}
+html[data-theme="light"] .sui-window-glass .bg-white\/5,
+html[data-theme="light"] .sui-menu .bg-white\/5 {
+  background-color: color-mix(in srgb, var(--app-fg) 5%, transparent);
+}
+html[data-theme="light"] .sui-window-glass .bg-white\/6,
+html[data-theme="light"] .sui-menu .bg-white\/6 {
+  background-color: color-mix(in srgb, var(--app-fg) 6%, transparent);
+}
+html[data-theme="light"] .sui-window-glass .bg-white\/8,
+html[data-theme="light"] .sui-menu .bg-white\/8 {
+  background-color: color-mix(in srgb, var(--app-fg) 8%, transparent);
+}
+html[data-theme="light"] .sui-window-glass .bg-white\/10,
+html[data-theme="light"] .sui-menu .bg-white\/10 {
+  background-color: color-mix(in srgb, var(--app-fg) 8%, transparent);
+}
+html[data-theme="light"] .sui-window-glass .bg-white\/12,
+html[data-theme="light"] .sui-menu .bg-white\/12 {
+  background-color: color-mix(in srgb, var(--app-fg) 8%, transparent);
+}
+html[data-theme="light"] .sui-window-glass .bg-white\/14,
+html[data-theme="light"] .sui-menu .bg-white\/14 {
+  background-color: color-mix(in srgb, var(--app-fg) 10%, transparent);
+}
+html[data-theme="light"] .sui-window-glass .bg-white\/15,
+html[data-theme="light"] .sui-menu .bg-white\/15 {
+  background-color: color-mix(in srgb, var(--app-fg) 10%, transparent);
+}
+html[data-theme="light"] .sui-window-glass .bg-white\/16,
+html[data-theme="light"] .sui-menu .bg-white\/16 {
+  background-color: color-mix(in srgb, var(--app-fg) 10%, transparent);
+}
+html[data-theme="light"] .sui-window-glass .bg-white\/18,
+html[data-theme="light"] .sui-menu .bg-white\/18 {
+  background-color: color-mix(in srgb, var(--app-fg) 12%, transparent);
+}
+html[data-theme="light"] .sui-window-glass .bg-white\/20,
+html[data-theme="light"] .sui-menu .bg-white\/20 {
+  background-color: color-mix(in srgb, var(--app-fg) 12%, transparent);
+}
+html[data-theme="light"] .sui-window-glass .bg-white\/25,
+html[data-theme="light"] .sui-menu .bg-white\/25 {
+  background-color: color-mix(in srgb, var(--app-fg) 14%, transparent);
+}
+
+html[data-theme="light"] .sui-window-glass .border-white\/6,
+html[data-theme="light"] .sui-menu .border-white\/6 {
+  border-color: color-mix(in srgb, var(--app-fg) 8%, transparent);
+}
+html[data-theme="light"] .sui-window-glass .border-white\/8,
+html[data-theme="light"] .sui-menu .border-white\/8 {
+  border-color: color-mix(in srgb, var(--app-fg) 10%, transparent);
+}
+html[data-theme="light"] .sui-window-glass .border-white\/10,
+html[data-theme="light"] .sui-menu .border-white\/10 {
+  border-color: color-mix(in srgb, var(--app-fg) 12%, transparent);
+}
+html[data-theme="light"] .sui-window-glass .border-white\/15,
+html[data-theme="light"] .sui-menu .border-white\/15 {
+  border-color: color-mix(in srgb, var(--app-fg) 16%, transparent);
+}
+html[data-theme="light"] .sui-window-glass .border-white\/18,
+html[data-theme="light"] .sui-menu .border-white\/18 {
+  border-color: color-mix(in srgb, var(--app-fg) 18%, transparent);
+}
+html[data-theme="light"] .sui-window-glass .border-white\/20,
+html[data-theme="light"] .sui-menu .border-white\/20 {
+  border-color: color-mix(in srgb, var(--app-fg) 20%, transparent);
+}
+html[data-theme="light"] .sui-window-glass .border-white\/30,
+html[data-theme="light"] .sui-menu .border-white\/30 {
+  border-color: color-mix(in srgb, var(--app-fg) 28%, transparent);
+}
+html[data-theme="light"] .sui-window-glass .border-white\/35,
+html[data-theme="light"] .sui-menu .border-white\/35 {
+  border-color: color-mix(in srgb, var(--app-fg) 32%, transparent);
+}
+html[data-theme="light"] .sui-window-glass .border-white\/40,
+html[data-theme="light"] .sui-menu .border-white\/40 {
+  border-color: color-mix(in srgb, var(--app-fg) 36%, transparent);
+}
+
+html[data-theme="light"] .sui-terminal .text-white\/25 {
+  color: rgb(255 255 255 / 0.25);
+}
+html[data-theme="light"] .sui-terminal .text-white\/28 {
+  color: rgb(255 255 255 / 0.28);
+}
+html[data-theme="light"] .sui-terminal .text-white\/30 {
+  color: rgb(255 255 255 / 0.3);
+}
+html[data-theme="light"] .sui-terminal .text-white\/35 {
+  color: rgb(255 255 255 / 0.35);
+}
+html[data-theme="light"] .sui-terminal .text-white\/40 {
+  color: rgb(255 255 255 / 0.4);
+}
+html[data-theme="light"] .sui-terminal .text-white\/45 {
+  color: rgb(255 255 255 / 0.45);
+}
+html[data-theme="light"] .sui-terminal .text-white\/50 {
+  color: rgb(255 255 255 / 0.5);
+}
+html[data-theme="light"] .sui-terminal .text-white\/55 {
+  color: rgb(255 255 255 / 0.55);
+}
+html[data-theme="light"] .sui-terminal .text-white\/60 {
+  color: rgb(255 255 255 / 0.6);
+}
+html[data-theme="light"] .sui-terminal .text-white\/70 {
+  color: rgb(255 255 255 / 0.7);
+}
+html[data-theme="light"] .sui-terminal .text-white\/80 {
+  color: rgb(255 255 255 / 0.8);
+}
+html[data-theme="light"] .sui-terminal .text-white\/85 {
+  color: rgb(255 255 255 / 0.85);
+}
+html[data-theme="light"] .sui-terminal .text-white\/90 {
+  color: rgb(255 255 255 / 0.9);
+}
+html[data-theme="light"] .sui-terminal .text-white {
+  color: #fff;
+}
+html[data-theme="light"] .sui-terminal .bg-white\/10 {
+  background-color: rgb(255 255 255 / 0.1);
+}
+html[data-theme="light"] .sui-terminal .border-white\/10 {
+  border-color: rgb(255 255 255 / 0.1);
+}
+
+/* Aura keeps its own palette. Light and dark still switch the surfaces. */
+html[data-appearance="aura"] {
+  color-scheme: dark;
+  --background: #141218;
+  --foreground: #e6e0e9;
+  --shell-accent: #d0bcff;
+  --shell-primary: var(--shell-accent);
+  --shell-on-primary: #291b41;
+  --shell-radius: 18px;
+  --shell-blur: 14px;
+  --shell-opacity: 94%;
+  --shell-surface: color-mix(in srgb, var(--shell-accent) 8%, var(--background));
+  --shell-surface-2: color-mix(in srgb, var(--shell-accent) 15%, var(--background));
+  --shell-container: color-mix(in srgb, var(--shell-accent) 30%, var(--background));
+  --shell-muted: color-mix(in srgb, var(--foreground) 65%, var(--background));
+  --shell-outline: color-mix(in srgb, var(--foreground) 14%, transparent);
+  --app-bg: var(--shell-surface);
+  --app-bg-2: var(--shell-surface-2);
+  --app-sidebar: var(--shell-surface);
+  --app-fg: var(--foreground);
+  --app-title: var(--foreground);
+  --app-muted: var(--shell-muted);
+  --app-card: var(--shell-surface-2);
+  --app-input: var(--shell-surface-2);
+  --app-border: var(--shell-outline);
+  --app-hover: var(--shell-container);
+  --app-selected: var(--shell-container);
+  --window-bg: color-mix(in srgb, var(--shell-surface) var(--shell-opacity), transparent);
+  --window-header: var(--shell-surface-2);
+  --window-header-inactive: var(--shell-surface);
+  --window-title: var(--foreground);
+  --window-border: var(--shell-outline);
+  --menu-bg: var(--shell-surface);
+  --menu-fg: var(--foreground);
+  --menu-border: var(--shell-outline);
+  --topbar-bg: var(--shell-surface);
+  --topbar-fg: var(--foreground);
+  --topbar-muted: var(--shell-muted);
+  --toggle-bg: var(--shell-surface-2);
+  --toggle-active: var(--shell-primary);
+  --toggle-active-fg: var(--shell-on-primary);
+  --finder-sidebar: var(--shell-surface);
+  --finder-toolbar: var(--shell-surface-2);
+  --finder-content: color-mix(in srgb, var(--shell-surface) 88%, var(--background));
+  --finder-hairline: var(--shell-outline);
+  --finder-text: var(--foreground);
+  --finder-muted: var(--shell-muted);
+  --finder-nav-hover: var(--shell-container);
+  --finder-nav-active: var(--shell-container);
+  --finder-tile-selected: var(--shell-container);
+  --finder-control: var(--shell-surface-2);
+  --finder-control-border: var(--shell-outline);
+  --finder-accent: var(--shell-primary);
+}
+
+html[data-appearance="aura"][data-theme="light"] {
+  color-scheme: light;
+  --background: #f7f2fa;
+  --foreground: #24202a;
+  --shell-primary: color-mix(in srgb, var(--shell-accent) 48%, #251236);
+  --shell-on-primary: #fff;
+  --finder-section: color-mix(in srgb, var(--foreground) 58%, var(--background));
+}
+
+html[data-appearance="aura"] .sui-window-glass {
+  border-radius: calc(var(--shell-radius) * 1.2);
+  background: var(--window-bg);
+  border-color: var(--window-border);
+  backdrop-filter: blur(var(--shell-blur));
+}
+
+.shell-desktop {
+  position: relative;
+  display: flex;
+  gap: 8px;
+  height: 100dvh;
+  padding: 10px;
+  overflow: hidden;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: "Avenir Next", "Segoe UI", system-ui, sans-serif;
+}
+.shell-desktop[data-right="true"] {
+  flex-direction: row-reverse;
+}
+.shell-rail {
+  width: 46px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  z-index: 45;
+}
+.shell-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 5px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--shell-surface-2) 68%, transparent);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid color-mix(in srgb, var(--foreground) 15%, transparent);
+  box-shadow: 0 10px 30px -4px rgba(0, 0, 0, 0.35), inset 0 1px 1.5px rgba(255, 255, 255, 0.22);
+}
+.shell-apps {
+  max-height: 42vh;
+  overflow: auto;
+  scrollbar-width: none;
+}
+.shell-icon {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  color: var(--foreground);
+  cursor: pointer;
+  transition: background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), color 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.shell-icon:hover,
+.shell-app-icon[aria-current="page"] {
+  background: var(--shell-container);
+  color: var(--shell-primary);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+}
+html[data-appearance="aura"][data-theme="dark"] .shell-icon:hover,
+html[data-appearance="aura"][data-theme="dark"] .shell-app-icon[aria-current="page"] {
+  background: color-mix(in srgb, var(--foreground) 18%, transparent);
+  color: var(--foreground);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.25);
+}
+.shell-running {
+  position: absolute;
+  left: 1px;
+  top: 17px;
+  height: 4px;
+  width: 4px;
+  border-radius: 50%;
+  background: var(--shell-primary);
+}
+.shell-badge {
+  position: absolute;
+  right: 0;
+  top: 0;
+  border-radius: 9px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  background: #f2b8b5;
+  color: #601410;
+  font-size: 10px;
+}
+.shell-rail-spacer {
+  flex: 1;
+  min-height: 0;
+}
+.shell-active-title {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  max-height: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  color: var(--shell-muted);
+}
+.shell-rail-metrics {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+}
+.shell-ring {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: conic-gradient(
+    var(--shell-primary) calc(var(--value, 0) * 1%),
+    var(--shell-surface-2) 0
+  );
+}
+.shell-ring::before {
+  position: absolute;
+  content: "";
+  inset: 3px;
+  border-radius: 50%;
+  background: var(--background);
+}
+.shell-ring svg {
+  position: relative;
+  color: var(--shell-muted);
+}
+.shell-clock {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 16px;
+  line-height: 1.2;
+  font-weight: 500;
+  max-width: 42px;
+  padding: 4px 2px;
+  border-radius: 12px;
+}
+.shell-clock time span {
+  display: block;
+}
+.shell-connection {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  right: 4px;
+  bottom: 5px;
+  border-radius: 50%;
+  background: #f2b8b5;
+}
+.shell-connection[data-online="true"] {
+  background: #a8dab5;
+}
+.shell-screen {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: calc(var(--shell-radius) * 1.4);
+  background:
+    radial-gradient(
+      70% 80% at 15% 0,
+      color-mix(in srgb, var(--shell-primary) 34%, var(--background)),
+      transparent 70%
+    ),
+    var(--shell-surface);
+}
+.shell-hero,
+.shell-desktop-caption,
+.shell-desktop-clock {
+  position: absolute;
+  pointer-events: none;
+  z-index: 1;
+  text-shadow: 0 1px 16px color-mix(in srgb, var(--background) 80%, transparent);
+}
+.shell-hero {
+  top: 22px;
+  left: 24px;
+}
+.shell-hero h1 {
+  font-weight: 500;
+  font-size: 30px;
+  line-height: 1.1;
+  margin: 14px 0 6px;
+}
+.shell-hero p,
+.shell-desktop-caption {
+  color: var(--shell-muted);
+  font-size: 13px;
+}
+.shell-desktop-caption {
+  bottom: 20px;
+  left: 24px;
+}
+.shell-desktop-clock {
+  bottom: 14px;
+  right: 26px;
+  font-size: 68px;
+  opacity: 0.4;
+  font-weight: 500;
+}
+.shell-workspace {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+}
+.shell-panel-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+}
+.shell-panel {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: calc(100% - 40px);
+  overflow: auto;
+  border: 1px solid var(--shell-outline);
+  border-radius: calc(var(--shell-radius) * 1.2);
+  padding: 20px;
+  background: var(--window-bg);
+  color: var(--foreground);
+  box-shadow: 0 16px 48px #0006;
+  backdrop-filter: blur(var(--shell-blur));
+}
+.shell-panel-launcher {
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(540px, calc(100% - 100px));
+}
+.shell-panel-settings {
+  right: 20px;
+  top: 20px;
+  bottom: 20px;
+  width: min(370px, calc(100% - 100px));
+}
+.shell-desktop[data-right="true"] .shell-panel-settings {
+  right: auto;
+  left: 20px;
+}
+.shell-panel-title h2 {
+  font-size: 16px;
+  font-weight: 500;
+}
+.shell-launcher-results {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: auto;
+}
+.shell-list-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  text-align: left;
+  min-height: 52px;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: var(--shell-radius);
+  background: transparent;
+  color: inherit;
+}
+.shell-list-item:hover {
+  background: var(--shell-container);
+}
+.shell-section-label {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--shell-muted);
+}
+.shell-appearance {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  color: var(--app-fg, inherit);
+}
+.shell-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.shell-tiles button {
+  min-height: 56px;
+  border: 0;
+  border-radius: var(--shell-radius);
+  padding: 8px 4px;
+  background: var(--shell-container);
+  color: var(--foreground);
+  font-size: 12px;
+}
+.shell-tiles button[aria-pressed="true"] {
+  background: var(--shell-primary);
+  color: var(--shell-on-primary);
+}
+.shell-swatches {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.shell-swatches button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: var(--shell-surface-2);
+  border: 1px solid transparent;
+  color: var(--foreground);
+}
+.shell-swatches button[aria-pressed="true"] {
+  border-color: var(--shell-primary);
+}
+.shell-swatches span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.shell-appearance label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+}
+.shell-appearance label input {
+  margin-left: auto;
+  max-width: 50%;
+  accent-color: var(--shell-primary);
+}
+.shell-appearance output {
+  min-width: 34px;
+  text-align: right;
+  font-size: 11px;
+  color: var(--shell-muted);
+}
+.shell-appearance input[type="color"] {
+  width: 44px;
+  height: 28px;
+  border: 0;
+  border-radius: 99px;
+  background: transparent;
+}
+.shell-apps[data-autohide="true"] {
+  opacity: 0.12;
+}
+.shell-rail:hover .shell-apps,
+.shell-apps:focus-within {
+  opacity: 1;
+}
+
+/* ==========================================================================
+   Liquid Glass Design System (designmd.app/library/liquid-glass)
+   Translucent, fluid, reflective, modern with chromatic aberration & spring physics
+   ========================================================================== */
+.liquid-glass {
+  position: relative;
+  background: color-mix(in srgb, var(--shell-surface-2) 65%, transparent);
+  backdrop-filter: blur(24px) saturate(190%);
+  -webkit-backdrop-filter: blur(24px) saturate(190%);
+  border: 1px solid color-mix(in srgb, var(--foreground) 16%, transparent);
+  border-radius: 12px;
+  box-shadow:
+    0 12px 36px -4px rgba(0, 0, 0, 0.32),
+    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.25),
+    inset 0 -1px 1px 0 rgba(255, 255, 255, 0.08);
+  transition: transform 0.48s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.48s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.liquid-glass:hover {
+  transform: scale(1.03);
+  box-shadow:
+    0 18px 48px -4px rgba(0, 0, 0, 0.38),
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.35);
+}
+
+/* Chromatic aberration edge refraction */
+.liquid-glass-chromatic {
+  border-image: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.55) 0%,
+    rgba(56, 189, 248, 0.45) 25%,
+    rgba(129, 140, 248, 0.4) 50%,
+    rgba(192, 132, 252, 0.35) 75%,
+    rgba(255, 255, 255, 0.18) 100%
+  ) 1;
+}
+
+/* Iridescent shimmer catch light */
+.liquid-glass-shimmer::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    105deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.12) 35%,
+    rgba(56, 189, 248, 0.18) 45%,
+    rgba(192, 132, 252, 0.15) 55%,
+    rgba(255, 255, 255, 0.12) 65%,
+    transparent 80%
+  );
+  background-size: 200% 100%;
+  animation: liquid-shimmer 6s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes liquid-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+html[data-compact="true"] .shell-panel {
+  padding: 14px;
+  gap: 10px;
+}
+html[data-motion="reduced"] .shell-panel {
+  backdrop-filter: none;
+}

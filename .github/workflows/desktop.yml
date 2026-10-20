@@ -1,0 +1,202 @@
+name: Desktop CI
+
+# Unsigned desktop packaging matrix. Does not publish releases.
+# Triggered on desktop-related changes and manual runs.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/desktop/**"
+      - "apps/web/**"
+      - "apps/server/**"
+      - "scripts/lib/desktop-release.sh"
+      - "scripts/collect-desktop-artifacts.sh"
+      - ".github/workflows/desktop.yml"
+      - "Makefile"
+  pull_request:
+    paths:
+      - "apps/desktop/**"
+      - "apps/web/**"
+      - "apps/server/**"
+      - "scripts/lib/desktop-release.sh"
+      - "scripts/collect-desktop-artifacts.sh"
+      - ".github/workflows/desktop.yml"
+      - "Makefile"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: desktop-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  desktop:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runner }}
+    defaults:
+      run:
+        shell: bash
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: macOS arm64
+            runner: macos-14
+            platform: macos-arm64
+            rust_target: aarch64-apple-darwin
+            goos: darwin
+            goarch: arm64
+            bundles: dmg
+            verify_arch: arm64
+          - name: macOS x64
+            runner: macos-14
+            platform: macos-x64
+            rust_target: x86_64-apple-darwin
+            goos: darwin
+            goarch: amd64
+            bundles: dmg
+            verify_arch: x86_64
+          - name: Linux x64
+            runner: ubuntu-22.04
+            platform: linux-x64
+            rust_target: x86_64-unknown-linux-gnu
+            goos: linux
+            goarch: amd64
+            bundles: appimage,deb
+            verify_arch: x86-64
+          - name: Windows x64
+            runner: windows-latest
+            platform: windows-x64
+            rust_target: x86_64-pc-windows-msvc
+            goos: windows
+            goarch: amd64
+            bundles: nsis,msi
+            verify_arch: x86-64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux WebKit dependencies
+        if: matrix.goos == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libssl-dev
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: |
+            apps/web/package-lock.json
+            apps/desktop/package-lock.json
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: apps/server/go.mod
+          cache-dependency-path: apps/server/go.sum
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust_target }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri -> target
+
+      - name: Install frontend dependencies
+        run: |
+          npm ci --prefix apps/web
+          npm ci --prefix apps/desktop
+
+      - name: Sync desktop version metadata
+        run: node apps/desktop/scripts/sync-version.mjs
+
+      - name: Build Go sidecar
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          TAURI_ENV_TARGET_TRIPLE: ${{ matrix.rust_target }}
+          FORCE_SIDECAR_REBUILD: "1"
+        run: |
+          chmod +x apps/desktop/scripts/prepare-sidecar.sh
+          apps/desktop/scripts/prepare-sidecar.sh
+          SIDECAR="apps/desktop/src-tauri/binaries/serverui-server-${{ matrix.rust_target }}"
+          if [[ "${{ matrix.goos }}" == "windows" ]]; then
+            SIDECAR="${SIDECAR}.exe"
+          fi
+          test -f "$SIDECAR"
+          info="$(file -b "$SIDECAR" || true)"
+          echo "Sidecar: $info"
+          if [[ -n "$info" && "$info" != *"${{ matrix.verify_arch }}"* && "$info" != *"PE32+"* ]]; then
+            echo "Sidecar architecture mismatch: expected ${{ matrix.verify_arch }}, got: $info"
+            exit 1
+          fi
+
+      - name: Build Tauri bundles (unsigned)
+        working-directory: apps/desktop
+        run: |
+          set -euo pipefail
+          HOST="$(rustc -vV | awk '/^host:/{print $2}')"
+          TARGET="${{ matrix.rust_target }}"
+          ARGS=(--bundles ${{ matrix.bundles }})
+          if [[ "$TARGET" != "$HOST" ]]; then
+            ARGS=(--target "$TARGET" "${ARGS[@]}")
+          fi
+          npm run build:unsigned -- "${ARGS[@]}"
+
+      - name: Resolve bundle directory
+        id: bundle
+        run: |
+          set -euo pipefail
+          TARGET="${{ matrix.rust_target }}"
+          HOST="$(rustc -vV | awk '/^host:/{print $2}')"
+          BASE="apps/desktop/src-tauri/target"
+          if [[ "$TARGET" == "$HOST" ]]; then
+            if [[ -d "$BASE/$TARGET/release/bundle" ]]; then
+              echo "dir=$BASE/$TARGET/release/bundle" >> "$GITHUB_OUTPUT"
+            else
+              echo "dir=$BASE/release/bundle" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "dir=$BASE/$TARGET/release/bundle" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Collect artifacts
+        id: collect
+        run: |
+          set -euo pipefail
+          VERSION="$(node -p "require('./apps/desktop/src-tauri/tauri.conf.json').version")"
+          chmod +x scripts/collect-desktop-artifacts.sh
+          case "${{ matrix.platform }}" in
+            macos-*) OUT="dist/macos" ;;
+            windows-*) OUT="dist/windows" ;;
+            linux-*) OUT="dist/linux" ;;
+          esac
+          mkdir -p "$OUT"
+          scripts/collect-desktop-artifacts.sh \
+            --version "$VERSION" \
+            --platform "${{ matrix.platform }}" \
+            --bundle-dir "${{ steps.bundle.outputs.dir }}" \
+            --out-dir "$OUT" \
+            --verify \
+            --checksums
+          echo "out=$OUT" >> "$GITHUB_OUTPUT"
+          ls -la "$OUT"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ServerUI-${{ matrix.platform }}
+          path: ${{ steps.collect.outputs.out }}/*
+          if-no-files-found: error
+          retention-days: 14

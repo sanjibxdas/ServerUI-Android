@@ -1,0 +1,8 @@
+{
+  "name": "ServerUI",
+  "description": "A high-performance native Android application for managing server infrastructure using Kotlin and Jetpack Compose.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

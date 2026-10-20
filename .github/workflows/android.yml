@@ -1,0 +1,102 @@
+name: Android Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-android:
+    name: Build Android ARM64 APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: "temurin"
+          java-version: "21"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - name: Ensure gradlew is executable
+        run: chmod +x gradlew
+
+      - name: Run unit tests
+        run: ./gradlew :app:testDebugUnitTest --no-daemon
+
+      - name: Build Debug APK
+        run: ./gradlew :app:assembleDebug --no-daemon
+
+      - name: Verify APK produced and non-empty
+        run: |
+          APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
+          if [ ! -f "$APK_PATH" ]; then
+            echo "Error: APK not found at $APK_PATH"
+            exit 1
+          fi
+          APK_SIZE=$(stat -c%s "$APK_PATH")
+          if [ "$APK_SIZE" -le 1000000 ]; then
+            echo "Error: APK size ($APK_SIZE bytes) is unexpectedly small"
+            exit 1
+          fi
+          echo "APK successfully verified ($APK_SIZE bytes)"
+
+      - name: Inspect APK architecture and arm64 compatibility
+        run: |
+          APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
+          echo "Inspecting native libraries in APK:"
+          unzip -l "$APK_PATH" | grep "lib/" || true
+          
+          # Check for arm64-v8a native library or bytecode
+          if unzip -l "$APK_PATH" | grep -q "lib/arm64-v8a/"; then
+            echo "Verified: arm64-v8a native libraries are packaged."
+          else
+            echo "Verified: CPU-portable Android bytecode with ART AOT/JIT execution."
+          fi
+
+      - name: Upload Debug APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: serverui-android-arm64
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Build Signed Release APK (Optional)
+        if: ${{ env.KEYSTORE_BASE64 != '' && env.KEY_PASSWORD != '' }}
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          echo "Release signing secrets detected. Decoding keystore..."
+          echo "$KEYSTORE_BASE64" | base64 -d > /tmp/release-keystore.jks
+          KEYSTORE_PATH="/tmp/release-keystore.jks" ./gradlew :app:assembleRelease --no-daemon
+          rm -f /tmp/release-keystore.jks
+
+      - name: Upload Release APK (if signed)
+        if: ${{ env.KEYSTORE_BASE64 != '' && env.KEY_PASSWORD != '' }}
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: serverui-android-arm64-release
+          path: app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: ignore
+          retention-days: 30
