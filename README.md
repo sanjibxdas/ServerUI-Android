@@ -12,7 +12,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/sanjibxdas/ServerUI-Android">
-    <img src="docs/assets/logo.png" alt="Logo" width="120" height="120">
+    <img src="branding/serverui-icon-1024.png" alt="Logo" width="120" height="120">
   </a>
 
   <h1 align="center">ServerUI Android</h1>
