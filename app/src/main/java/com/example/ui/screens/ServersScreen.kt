@@ -291,6 +291,7 @@ fun ServerFormDialog(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
+
                 item {
                     OutlinedTextField(
                         value = name,

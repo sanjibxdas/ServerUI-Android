@@ -197,18 +197,18 @@ fun ServerUIApp(viewModel: ServerUIViewModel = viewModel()) {
                             }
                         },
                         actions = {
-                            // Backend connection health indicator dot
+                            // SSH engine / server connection status indicator dot
+                            val activeServer = state.servers.firstOrNull { it.id == state.selectedServerId }
+                            val indicatorColor = when {
+                                activeServer != null && (activeServer.connected == true || state.metrics != null) -> ColorStatusOnline
+                                activeServer != null && state.metricsErrorMessage != null -> ColorStatusError
+                                else -> ColorStatusOnline // Android native SSH engine is active and ready
+                            }
                             Box(
                                 modifier = Modifier
                                     .size(8.dp)
                                     .clip(CircleShape)
-                                    .background(
-                                        when (state.backendHealthy) {
-                                            true -> ColorStatusOnline
-                                            false -> ColorStatusError
-                                            null -> ColorBodyMid
-                                        }
-                                    )
+                                    .background(indicatorColor)
                                     .testTag("backend_health_indicator")
                             )
                             Spacer(modifier = Modifier.width(6.dp))

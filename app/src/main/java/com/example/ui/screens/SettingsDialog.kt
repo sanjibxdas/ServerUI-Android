@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import android.os.Build
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -13,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -28,8 +30,8 @@ fun SettingsDialog(
     onDismiss: () -> Unit
 ) {
     val state by viewModel.uiState.collectAsState()
-    var urlInput by remember { mutableStateOf(state.backendUrl) }
-    var tokenInput by remember { mutableStateOf(state.localToken) }
+    var timeoutSeconds by remember { mutableStateOf(state.sshTimeoutSeconds) }
+    var pollSeconds by remember { mutableStateOf(state.pollIntervalSeconds) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -37,7 +39,7 @@ fun SettingsDialog(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Default.Settings, contentDescription = null, tint = ColorInk)
                 Spacer(modifier = Modifier.width(10.dp))
-                Text("ServerUI Connection", style = TypographyDisplayXS, color = ColorInk)
+                Text("ServerUI Settings", style = TypographyDisplayXS, color = ColorInk)
             }
         },
         text = {
@@ -45,106 +47,7 @@ fun SettingsDialog(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                item {
-                    Text(
-                        text = "Connect to your running ServerUI Go API backend. The native Android app dials this endpoint to manage SSH sessions, fleet telemetry, SFTP files, and WebSocket terminal.",
-                        style = TypographyBodySM,
-                        color = ColorBody
-                    )
-                }
-
-                item {
-                    Column {
-                        XEyebrowMono("INSTANCE URL")
-                        Spacer(modifier = Modifier.height(4.dp))
-                        OutlinedTextField(
-                            value = urlInput,
-                            onValueChange = { urlInput = it },
-                            placeholder = { Text("http://10.0.2.2:8080", color = ColorBodyMid) },
-                            singleLine = true,
-                            shape = RoundedCornerShape(8.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = ColorPillOutline,
-                                unfocusedBorderColor = ColorHairline,
-                                focusedContainerColor = ColorCanvasSoft,
-                                unfocusedContainerColor = ColorCanvasSoft,
-                                focusedTextColor = ColorInk,
-                                unfocusedTextColor = ColorInk
-                            ),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .testTag("settings_server_url_input"),
-                            textStyle = TypographyCaptionMonoSM
-                        )
-                    }
-                }
-
-                // Quick presets
-                item {
-                    XEyebrowMono("QUICK PRESETS")
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Surface(
-                            color = ColorCanvasSoft,
-                            shape = CircleShape,
-                            modifier = Modifier
-                                .border(1.dp, ColorHairline, CircleShape)
-                                .clickable { urlInput = "http://10.0.2.2:8080" }
-                        ) {
-                            Text(
-                                text = "EMULATOR (10.0.2.2)",
-                                style = TypographyCaptionMonoSM,
-                                color = ColorBody,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                            )
-                        }
-                        Surface(
-                            color = ColorCanvasSoft,
-                            shape = CircleShape,
-                            modifier = Modifier
-                                .border(1.dp, ColorHairline, CircleShape)
-                                .clickable { urlInput = "http://127.0.0.1:8080" }
-                        ) {
-                            Text(
-                                text = "LOCALHOST",
-                                style = TypographyCaptionMonoSM,
-                                color = ColorBody,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
-                            )
-                        }
-                    }
-                }
-
-                item {
-                    Column {
-                        XEyebrowMono("LOCAL AUTH TOKEN (OPTIONAL)")
-                        Spacer(modifier = Modifier.height(4.dp))
-                        OutlinedTextField(
-                            value = tokenInput,
-                            onValueChange = { tokenInput = it },
-                            placeholder = { Text("X-ServerUI-Local-Token", color = ColorBodyMid) },
-                            singleLine = true,
-                            shape = RoundedCornerShape(8.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = ColorPillOutline,
-                                unfocusedBorderColor = ColorHairline,
-                                focusedContainerColor = ColorCanvasSoft,
-                                unfocusedContainerColor = ColorCanvasSoft,
-                                focusedTextColor = ColorInk,
-                                unfocusedTextColor = ColorInk
-                            ),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .testTag("settings_local_token_input"),
-                            textStyle = TypographyCaptionMonoSM
-                        )
-                    }
-                }
-
-                // Backend Health Check Status
+                // Engine Status Card
                 item {
                     Surface(
                         color = ColorCanvasSoft,
@@ -153,57 +56,104 @@ fun SettingsDialog(
                             .fillMaxWidth()
                             .border(1.dp, ColorHairline, RoundedCornerShape(8.dp))
                     ) {
-                        Row(
-                            modifier = Modifier.padding(12.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            if (state.isCheckingBackend) {
-                                CircularProgressIndicator(modifier = Modifier.size(16.dp), color = ColorInk)
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Pinging /healthz...", style = TypographyCaptionMonoSM, color = ColorBody)
-                            } else {
+                        Column(modifier = Modifier.padding(14.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
                                 Icon(
-                                    imageVector = when (state.backendHealthy) {
-                                        true -> Icons.Default.CheckCircle
-                                        false -> Icons.Default.Cancel
-                                        null -> Icons.Default.HelpOutline
-                                    },
+                                    imageVector = Icons.Default.CheckCircle,
                                     contentDescription = null,
-                                    tint = when (state.backendHealthy) {
-                                        true -> ColorStatusOnline
-                                        false -> ColorStatusError
-                                        null -> ColorBodyMid
-                                    },
+                                    tint = ColorStatusOnline,
                                     modifier = Modifier.size(18.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Column {
-                                    Text(
-                                        text = when (state.backendHealthy) {
-                                            true -> "ServerUI API Connected (/healthz OK)"
-                                            false -> "Cannot connect to ServerUI"
-                                            null -> "Health unchecked"
-                                        },
-                                        style = TypographyBodySM,
-                                        color = when (state.backendHealthy) {
-                                            true -> ColorStatusOnline
-                                            false -> ColorStatusError
-                                            null -> ColorBodyMid
-                                        }
-                                    )
-                                    if (state.backendErrorMessage != null) {
-                                        Text(
-                                            text = state.backendErrorMessage!!,
-                                            style = TypographyCaptionMonoSM,
-                                            color = ColorBodyMid
+                                Text(
+                                    text = "Standalone Android SSH Engine",
+                                    style = TypographyBodySM,
+                                    color = ColorStatusOnline
+                                )
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "ServerUI connects directly from your Android device to remote Linux servers over SSH and SFTP. No desktop apps, companion daemons, or intermediate proxies are required.",
+                                style = TypographyCaptionMonoSM,
+                                color = ColorBody
+                            )
+                        }
+                    }
+                }
+
+                // SSH Connection Timeout
+                item {
+                    Column {
+                        XEyebrowMono("SSH CONNECTION TIMEOUT")
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            listOf(5, 10, 15, 30).forEach { sec ->
+                                val selected = timeoutSeconds == sec
+                                Surface(
+                                    color = if (selected) ColorCanvasCard else ColorCanvasSoft,
+                                    shape = CircleShape,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .border(
+                                            width = 1.dp,
+                                            color = if (selected) ColorPillOutline else ColorHairline,
+                                            shape = CircleShape
                                         )
-                                    }
+                                        .clickable { timeoutSeconds = sec }
+                                ) {
+                                    Text(
+                                        text = "${sec}s",
+                                        style = TypographyCaptionMonoSM,
+                                        color = if (selected) ColorInk else ColorBodyMid,
+                                        modifier = Modifier.padding(vertical = 8.dp),
+                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                    )
                                 }
                             }
                         }
                     }
                 }
 
+                // Live Metrics Poll Rate
+                item {
+                    Column {
+                        XEyebrowMono("TELEMETRY REFRESH RATE")
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            listOf(2, 3, 5, 10).forEach { sec ->
+                                val selected = pollSeconds == sec
+                                Surface(
+                                    color = if (selected) ColorCanvasCard else ColorCanvasSoft,
+                                    shape = CircleShape,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .border(
+                                            width = 1.dp,
+                                            color = if (selected) ColorPillOutline else ColorHairline,
+                                            shape = CircleShape
+                                        )
+                                        .clickable { pollSeconds = sec }
+                                ) {
+                                    Text(
+                                        text = "${sec}s",
+                                        style = TypographyCaptionMonoSM,
+                                        color = if (selected) ColorInk else ColorBodyMid,
+                                        modifier = Modifier.padding(vertical = 8.dp),
+                                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Privacy & Storage Card
                 item {
                     Surface(
                         color = ColorCanvasSoft,
@@ -213,10 +163,40 @@ fun SettingsDialog(
                             .border(1.dp, ColorHairline, RoundedCornerShape(8.dp))
                     ) {
                         Column(modifier = Modifier.padding(12.dp)) {
-                            XEyebrowMono("NATIVE ARM64 CLIENT")
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.Lock,
+                                    contentDescription = null,
+                                    tint = ColorInk,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                XEyebrowMono("ON-DEVICE PRIVACY & SECURITY")
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = "All server profiles, passwords, and SSH private keys are stored exclusively in your phone's private app sandbox. Credentials never touch any third-party cloud.",
+                                style = TypographyCaptionMonoSM,
+                                color = ColorBodyMid
+                            )
+                        }
+                    }
+                }
+
+                // Technical Info Card
+                item {
+                    Surface(
+                        color = ColorCanvasSoft,
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .border(1.dp, ColorHairline, RoundedCornerShape(8.dp))
+                    ) {
+                        Column(modifier = Modifier.padding(12.dp)) {
+                            XEyebrowMono("CLIENT ENVIRONMENT")
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "Built 100% natively in Kotlin & Jetpack Compose. Runs on 64-bit ARM Android devices and x86_64 emulators via standard Android Runtime (ART) with AOT/JIT compilation.",
+                                text = "Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT}) • Modern JSch 0.2.23 SSH2 with RSA-SHA2, Ed25519 & ECDSA support",
                                 style = TypographyCaptionMonoSM,
                                 color = ColorBodyMid
                             )
@@ -227,9 +207,9 @@ fun SettingsDialog(
         },
         confirmButton = {
             XPillButton(
-                text = "SAVE & CONNECT",
+                text = "SAVE SETTINGS",
                 onClick = {
-                    viewModel.saveBackendConfig(urlInput.trim(), tokenInput.trim())
+                    viewModel.saveSshSettings(timeoutSeconds, pollSeconds)
                     onDismiss()
                 },
                 modifier = Modifier.testTag("settings_save_button")
@@ -237,7 +217,7 @@ fun SettingsDialog(
         },
         dismissButton = {
             XPillOutlineButton(
-                text = "CANCEL",
+                text = "CLOSE",
                 onClick = onDismiss,
                 compact = true
             )

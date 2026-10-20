@@ -280,3 +280,11 @@ data class SimpleStatus(
     @Json(name = "ok") val ok: Boolean? = null,
     @Json(name = "error") val error: String? = null
 )
+
+@JsonClass(generateAdapter = true)
+data class PendingShareFile(
+    @Json(name = "uriString") val uriString: String,
+    @Json(name = "name") val name: String,
+    @Json(name = "size") val size: Long
+)
+

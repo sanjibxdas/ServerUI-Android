@@ -40,6 +40,7 @@ fun DashboardScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val metrics = state.metrics
+    val selectedServer = state.servers.firstOrNull { it.id == state.selectedServerId }
 
     var dashboardSection by remember { mutableIntStateOf(0) } // 0: Telemetry, 1: Processes, 2: Services
     var processToKill by remember { mutableStateOf<ProcessInfo?>(null) }
@@ -98,8 +99,8 @@ fun DashboardScreen(
                         verticalArrangement = Arrangement.spacedBy(16.dp),
                         contentPadding = PaddingValues(top = 8.dp, bottom = 120.dp)
                     ) {
-                        // Backend health status banner if unreachable
-                        if (state.backendHealthy == false) {
+                        // Active server SSH metrics warning if unreachable
+                        if (state.metricsErrorMessage != null && selectedServer != null) {
                             item {
                                 Card(
                                     colors = CardDefaults.cardColors(containerColor = ColorCanvasCard),
@@ -121,19 +122,19 @@ fun DashboardScreen(
                                         Spacer(modifier = Modifier.width(12.dp))
                                         Column(modifier = Modifier.weight(1f)) {
                                             Text(
-                                                text = "ServerUI Backend Unreachable",
+                                                text = "Host Telemetry Disconnected",
                                                 style = TypographyBodySM,
                                                 color = ColorInk
                                             )
                                             Text(
-                                                text = state.backendErrorMessage ?: "Could not connect to ${state.backendUrl}",
+                                                text = state.metricsErrorMessage ?: "Unable to fetch telemetry from ${selectedServer.host}",
                                                 style = TypographyCaptionMonoSM,
                                                 color = ColorBodyMid
                                             )
                                         }
                                         XPillOutlineButton(
-                                            text = "CONFIGURE",
-                                            onClick = onOpenSettings,
+                                            text = "RECONNECT",
+                                            onClick = { viewModel.startMetricsPolling() },
                                             compact = true
                                         )
                                     }

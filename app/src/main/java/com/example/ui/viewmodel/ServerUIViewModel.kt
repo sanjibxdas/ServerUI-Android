@@ -1,6 +1,8 @@
 package com.example.ui.viewmodel
 
 import android.app.Application
+import android.net.Uri
+import android.provider.OpenableColumns
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.model.*
@@ -17,11 +19,11 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 data class UIState(
-    val backendUrl: String = "",
-    val localToken: String = "",
     val isCheckingBackend: Boolean = false,
-    val backendHealthy: Boolean? = null,
+    val backendHealthy: Boolean = true,
     val backendErrorMessage: String? = null,
+    val sshTimeoutSeconds: Int = 10,
+    val pollIntervalSeconds: Int = 3,
 
     val servers: List<ServerPublic> = emptyList(),
     val selectedServerId: String? = null,
@@ -45,6 +47,13 @@ data class UIState(
     val selectedPreview: FilePreview? = null,
     val editorContent: String = "",
     val isSavingFile: Boolean = false,
+    val isMultiSelectMode: Boolean = false,
+    val selectedFilePaths: Set<String> = emptySet(),
+    val searchQuery: String = "",
+    val searchResults: List<FileEntry>? = null,
+    val isSearching: Boolean = false,
+    val bookmarks: List<String> = emptyList(),
+    val pendingShareFiles: List<PendingShareFile>? = null,
 
     val terminalLines: List<String> = emptyList(),
     val terminalState: TerminalState = TerminalState.Disconnected,
@@ -63,8 +72,9 @@ class ServerUIViewModel(application: Application) : AndroidViewModel(application
 
     private val _uiState = MutableStateFlow(
         UIState(
-            backendUrl = repository.getServerUrl(),
-            localToken = repository.getLocalToken()
+            sshTimeoutSeconds = repository.getSshTimeoutSeconds(),
+            pollIntervalSeconds = repository.getPollIntervalSeconds(),
+            backendHealthy = true
         )
     )
     val uiState: StateFlow<UIState> = _uiState.asStateFlow()
@@ -72,7 +82,6 @@ class ServerUIViewModel(application: Application) : AndroidViewModel(application
     private var metricsJob: Job? = null
 
     init {
-        checkBackendHealth()
         loadServers()
 
         // Collect terminal output
@@ -94,37 +103,19 @@ class ServerUIViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun checkBackendHealth() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isCheckingBackend = true, backendErrorMessage = null) }
-            val res = repository.checkHealth()
-            res.fold(
-                onSuccess = {
-                    _uiState.update { it.copy(isCheckingBackend = false, backendHealthy = true, backendErrorMessage = null) }
-                },
-                onFailure = { err ->
-                    _uiState.update {
-                        it.copy(
-                            isCheckingBackend = false,
-                            backendHealthy = false,
-                            backendErrorMessage = err.localizedMessage ?: "Could not connect to ServerUI backend"
-                        )
-                    }
-                }
-            )
-        }
+        _uiState.update { it.copy(backendHealthy = true, isCheckingBackend = false, backendErrorMessage = null) }
     }
 
-    fun saveBackendConfig(url: String, token: String) {
-        repository.saveConfig(url, token)
+    fun saveSshSettings(timeoutSeconds: Int, pollSeconds: Int) {
+        repository.setSshTimeoutSeconds(timeoutSeconds)
+        repository.setPollIntervalSeconds(pollSeconds)
         _uiState.update {
             it.copy(
-                backendUrl = repository.getServerUrl(),
-                localToken = repository.getLocalToken(),
-                backendHealthy = null
+                sshTimeoutSeconds = timeoutSeconds,
+                pollIntervalSeconds = pollSeconds
             )
         }
-        checkBackendHealth()
-        loadServers()
+        showSnackbar("SSH settings saved")
     }
 
     fun loadServers(autoSelectFirst: Boolean = true) {
@@ -244,9 +235,26 @@ class ServerUIViewModel(application: Application) : AndroidViewModel(application
                     _uiState.update { it.copy(isTestingDraft = false, draftTestResult = result) }
                 },
                 onFailure = { err ->
-                    _uiState.update { it.copy(isTestingDraft = false, testErrorMessage = err.localizedMessage) }
+                    _uiState.update { it.copy(isTestingDraft = false, testErrorMessage = formatErrorMessage(err)) }
                 }
             )
+        }
+    }
+
+    private fun formatErrorMessage(err: Throwable): String {
+        val msg = err.localizedMessage ?: "Connection error"
+        return when {
+            msg.contains("Auth fail", ignoreCase = true) ->
+                "SSH authentication failed: Check your username, password, or SSH private key."
+            msg.contains("UnknownHost", ignoreCase = true) ->
+                "Unknown host: Check the server IP or domain."
+            msg.contains("timeout", ignoreCase = true) || msg.contains("timed out", ignoreCase = true) ->
+                "Connection timed out: Server unreachable or firewall blocking the SSH port."
+            msg.contains("Connection refused", ignoreCase = true) ->
+                "Connection refused: Ensure SSH service is running on the target server."
+            msg.contains("invalid privatekey", ignoreCase = true) ->
+                "Invalid private key format: Please check the PEM / OpenSSH key pasted."
+            else -> msg
         }
     }
 
@@ -259,7 +267,7 @@ class ServerUIViewModel(application: Application) : AndroidViewModel(application
                     _uiState.update { it.copy(isTestingDraft = false, draftTestResult = result) }
                 },
                 onFailure = { err ->
-                    _uiState.update { it.copy(isTestingDraft = false, testErrorMessage = err.localizedMessage) }
+                    _uiState.update { it.copy(isTestingDraft = false, testErrorMessage = formatErrorMessage(err)) }
                 }
             )
         }
@@ -279,7 +287,7 @@ class ServerUIViewModel(application: Application) : AndroidViewModel(application
                     onDone()
                 },
                 onFailure = { err ->
-                    showSnackbar("Error: ${err.localizedMessage}")
+                    showSnackbar(formatErrorMessage(err))
                 }
             )
         }
@@ -380,8 +388,17 @@ class ServerUIViewModel(application: Application) : AndroidViewModel(application
     // File Operations
     fun loadFiles(path: String) {
         val serverId = _uiState.value.selectedServerId ?: return
+        val currentBookmarks = repository.getBookmarks(serverId)
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoadingFiles = true, fileErrorMessage = null) }
+            _uiState.update {
+                it.copy(
+                    isLoadingFiles = true,
+                    fileErrorMessage = null,
+                    isMultiSelectMode = false,
+                    selectedFilePaths = emptySet(),
+                    bookmarks = currentBookmarks
+                )
+            }
             val res = repository.listFiles(serverId, path)
             res.fold(
                 onSuccess = { listResp ->
@@ -393,7 +410,8 @@ class ServerUIViewModel(application: Application) : AndroidViewModel(application
                                     .thenBy { entry -> entry.name.lowercase() }
                             ),
                             isLoadingFiles = false,
-                            fileErrorMessage = null
+                            fileErrorMessage = null,
+                            bookmarks = currentBookmarks
                         )
                     }
                 },
@@ -401,7 +419,8 @@ class ServerUIViewModel(application: Application) : AndroidViewModel(application
                     _uiState.update {
                         it.copy(
                             isLoadingFiles = false,
-                            fileErrorMessage = err.localizedMessage ?: "Failed to list files"
+                            fileErrorMessage = err.localizedMessage ?: "Failed to list files",
+                            bookmarks = currentBookmarks
                         )
                     }
                 }
@@ -556,11 +575,260 @@ class ServerUIViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    // Multi-select & Bulk operations
+    fun toggleMultiSelectMode(initialPath: String? = null) {
+        _uiState.update { current ->
+            val newMode = !current.isMultiSelectMode
+            val newSelection = if (newMode && initialPath != null) setOf(initialPath) else emptySet()
+            current.copy(isMultiSelectMode = newMode, selectedFilePaths = newSelection)
+        }
+    }
+
+    fun toggleFileSelection(path: String) {
+        _uiState.update { current ->
+            val set = current.selectedFilePaths.toMutableSet()
+            if (set.contains(path)) {
+                set.remove(path)
+            } else {
+                set.add(path)
+            }
+            current.copy(selectedFilePaths = set)
+        }
+    }
+
+    fun selectAllFiles() {
+        val all = _uiState.value.fileEntries.map { it.path }.toSet()
+        _uiState.update { it.copy(selectedFilePaths = all) }
+    }
+
+    fun clearFileSelection() {
+        _uiState.update { it.copy(isMultiSelectMode = false, selectedFilePaths = emptySet()) }
+    }
+
+    fun bulkDeleteSelected() {
+        val serverId = _uiState.value.selectedServerId ?: return
+        val targets = _uiState.value.selectedFilePaths.toList()
+        if (targets.isEmpty()) return
+        viewModelScope.launch {
+            showSnackbar("Deleting ${targets.size} item(s)...")
+            val res = repository.bulkDelete(serverId, targets)
+            res.fold(
+                onSuccess = {
+                    showSnackbar("Deleted ${targets.size} item(s)")
+                    clearFileSelection()
+                    loadFiles(_uiState.value.currentFilePath)
+                },
+                onFailure = { err ->
+                    showSnackbar("Bulk delete failed: ${err.localizedMessage}")
+                }
+            )
+        }
+    }
+
+    fun bulkCopySelected(destDir: String) {
+        val serverId = _uiState.value.selectedServerId ?: return
+        val targets = _uiState.value.selectedFilePaths.toList()
+        if (targets.isEmpty()) return
+        viewModelScope.launch {
+            showSnackbar("Copying ${targets.size} item(s)...")
+            val res = repository.bulkCopy(serverId, targets, destDir)
+            res.fold(
+                onSuccess = {
+                    showSnackbar("Copied ${targets.size} item(s) to $destDir")
+                    clearFileSelection()
+                    loadFiles(_uiState.value.currentFilePath)
+                },
+                onFailure = { err ->
+                    showSnackbar("Bulk copy failed: ${err.localizedMessage}")
+                }
+            )
+        }
+    }
+
+    fun bulkMoveSelected(destDir: String) {
+        val serverId = _uiState.value.selectedServerId ?: return
+        val targets = _uiState.value.selectedFilePaths.toList()
+        if (targets.isEmpty()) return
+        viewModelScope.launch {
+            showSnackbar("Moving ${targets.size} item(s)...")
+            val res = repository.bulkMove(serverId, targets, destDir)
+            res.fold(
+                onSuccess = {
+                    showSnackbar("Moved ${targets.size} item(s) to $destDir")
+                    clearFileSelection()
+                    loadFiles(_uiState.value.currentFilePath)
+                },
+                onFailure = { err ->
+                    showSnackbar("Bulk move failed: ${err.localizedMessage}")
+                }
+            )
+        }
+    }
+
+    // SAF File Transfer (Download & Upload)
+    fun downloadFile(remotePath: String, destUri: Uri) {
+        val serverId = _uiState.value.selectedServerId ?: return
+        viewModelScope.launch {
+            showSnackbar("Starting download...")
+            try {
+                val outputStream = getApplication<Application>().contentResolver.openOutputStream(destUri)
+                if (outputStream == null) {
+                    showSnackbar("Cannot open local destination stream")
+                    return@launch
+                }
+                outputStream.use { out ->
+                    val res = repository.downloadFile(serverId, remotePath, out)
+                    res.fold(
+                        onSuccess = { showSnackbar("Download complete: ${remotePath.substringAfterLast('/')}") },
+                        onFailure = { err -> showSnackbar("Download failed: ${err.localizedMessage}") }
+                    )
+                }
+            } catch (e: Exception) {
+                showSnackbar("Download error: ${e.localizedMessage}")
+            }
+        }
+    }
+
+    fun uploadFiles(sourceUris: List<Uri>, destDir: String) {
+        val serverId = _uiState.value.selectedServerId ?: return
+        if (sourceUris.isEmpty()) return
+        viewModelScope.launch {
+            val contentResolver = getApplication<Application>().contentResolver
+            var successCount = 0
+            for (uri in sourceUris) {
+                var fileName = "upload_${System.currentTimeMillis()}"
+                try {
+                    contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                        if (cursor.moveToFirst()) {
+                            val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                            if (nameIndex != -1) {
+                                fileName = cursor.getString(nameIndex) ?: fileName
+                            }
+                        }
+                    }
+                } catch (_: Exception) {}
+
+                val remotePath = "${destDir.removeSuffix("/")}/$fileName"
+                try {
+                    contentResolver.openInputStream(uri)?.use { stream ->
+                        val res = repository.uploadFile(serverId, remotePath, stream)
+                        if (res.isSuccess) successCount++
+                    }
+                } catch (_: Exception) {}
+            }
+            showSnackbar("Uploaded $successCount of ${sourceUris.size} file(s)")
+            loadFiles(_uiState.value.currentFilePath)
+        }
+    }
+
+    // Permissions: chmod & chown
+    fun chmodFile(path: String, octalPermissions: Int) {
+        val serverId = _uiState.value.selectedServerId ?: return
+        viewModelScope.launch {
+            val res = repository.chmod(serverId, path, octalPermissions)
+            res.fold(
+                onSuccess = {
+                    showSnackbar("Permissions updated (0${Integer.toOctalString(octalPermissions)})")
+                    loadFiles(_uiState.value.currentFilePath)
+                },
+                onFailure = { err ->
+                    showSnackbar("chmod failed: ${err.localizedMessage}")
+                }
+            )
+        }
+    }
+
+    fun chownFile(path: String, owner: String, group: String) {
+        val serverId = _uiState.value.selectedServerId ?: return
+        viewModelScope.launch {
+            val res = repository.chown(serverId, path, owner, group)
+            res.fold(
+                onSuccess = {
+                    showSnackbar("Owner updated to $owner:$group")
+                    loadFiles(_uiState.value.currentFilePath)
+                },
+                onFailure = { err ->
+                    showSnackbar("chown failed: ${err.localizedMessage}")
+                }
+            )
+        }
+    }
+
+    // Recursive search
+    fun searchFiles(query: String) {
+        val serverId = _uiState.value.selectedServerId ?: return
+        if (query.isBlank()) {
+            clearSearch()
+            return
+        }
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSearching = true, searchQuery = query) }
+            val res = repository.searchFiles(serverId, _uiState.value.currentFilePath, query)
+            res.fold(
+                onSuccess = { results ->
+                    _uiState.update { it.copy(isSearching = false, searchResults = results) }
+                },
+                onFailure = { err ->
+                    _uiState.update { it.copy(isSearching = false) }
+                    showSnackbar("Search failed: ${err.localizedMessage}")
+                }
+            )
+        }
+    }
+
+    fun clearSearch() {
+        _uiState.update { it.copy(searchQuery = "", searchResults = null, isSearching = false) }
+    }
+
+    // Directory Bookmarks
+    fun addBookmark(path: String) {
+        val serverId = _uiState.value.selectedServerId ?: return
+        val updated = repository.addBookmark(serverId, path)
+        _uiState.update { it.copy(bookmarks = updated) }
+        showSnackbar("Bookmarked: $path")
+    }
+
+    fun removeBookmark(path: String) {
+        val serverId = _uiState.value.selectedServerId ?: return
+        val updated = repository.removeBookmark(serverId, path)
+        _uiState.update { it.copy(bookmarks = updated) }
+        showSnackbar("Removed bookmark: $path")
+    }
+
+    // Pending Share-Sheet Target Handlers
+    fun setPendingShareFiles(files: List<PendingShareFile>?) {
+        _uiState.update { it.copy(pendingShareFiles = files) }
+    }
+
+    fun confirmShareUpload(targetServerId: String, targetRemoteDir: String) {
+        val pending = _uiState.value.pendingShareFiles ?: return
+        viewModelScope.launch {
+            val contentResolver = getApplication<Application>().contentResolver
+            var uploadedCount = 0
+            showSnackbar("Uploading ${pending.size} shared item(s)...")
+            for (item in pending) {
+                val uri = Uri.parse(item.uriString)
+                val targetPath = "${targetRemoteDir.removeSuffix("/")}/${item.name}"
+                try {
+                    contentResolver.openInputStream(uri)?.use { stream ->
+                        val res = repository.uploadFile(targetServerId, targetPath, stream)
+                        if (res.isSuccess) uploadedCount++
+                    }
+                } catch (_: Exception) {}
+            }
+            _uiState.update { it.copy(pendingShareFiles = null) }
+            showSnackbar("Shared $uploadedCount item(s) uploaded successfully")
+            if (_uiState.value.selectedServerId == targetServerId) {
+                loadFiles(_uiState.value.currentFilePath)
+            }
+        }
+    }
+
     // Terminal
     fun connectTerminal() {
         val serverId = _uiState.value.selectedServerId ?: return
-        _uiState.update { it.copy(terminalLines = listOf("[Connecting to SSH terminal on server...]")) }
-        terminalManager.connect(serverId)
+        val server = repository.localStore.getServer(serverId) ?: return
+        terminalManager.connectDirect(server)
     }
 
     fun disconnectTerminal() {

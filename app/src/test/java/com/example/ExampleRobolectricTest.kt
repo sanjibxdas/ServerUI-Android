@@ -34,13 +34,28 @@ class ExampleRobolectricTest {
   }
 
   @Test
-  fun `launch main activity`() {
-    try {
-      val controller = org.robolectric.Robolectric.buildActivity(MainActivity::class.java).setup()
-      org.junit.Assert.assertNotNull(controller.get())
-    } catch (e: Exception) {
-      // In Robolectric headless test environment, font asset parsing is simulated
-      println("Headless environment notice: ${e.message}")
-    }
+  fun `local server store persist and retrieve`() {
+    val context = ApplicationProvider.getApplicationContext<Context>()
+    val store = com.example.data.local.LocalServerStore(context)
+    val server = store.saveServer(
+      com.example.data.model.ServerInput(
+        name = "test-ec2",
+        host = "35.154.77.95",
+        port = 22,
+        username = "ubuntu",
+        authType = "password"
+      )
+    )
+    val retrieved = store.getServer(server.id)
+    org.junit.Assert.assertNotNull(retrieved)
+    assertEquals("35.154.77.95", retrieved?.host)
+    store.deleteServer(server.id)
+  }
+
+  @Test
+  fun `repository is direct standalone on android`() {
+    val context = ApplicationProvider.getApplicationContext<Context>()
+    val repo = com.example.data.repository.ServerUIRepository(context)
+    org.junit.Assert.assertTrue("Repository must always be in direct standalone mode", repo.isDirectMode())
   }
 }
