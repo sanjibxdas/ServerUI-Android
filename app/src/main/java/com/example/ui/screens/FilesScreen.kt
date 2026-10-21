@@ -35,7 +35,7 @@ import com.example.ui.components.*
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.ServerUIViewModel
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 @Composable
 fun FilesScreen(
     viewModel: ServerUIViewModel,
@@ -158,10 +158,14 @@ fun FilesScreen(
                         }
 
                         // Breadcrumb Scroll
+                        val breadcrumbScrollState = rememberScrollState()
+                        LaunchedEffect(state.currentFilePath) {
+                            breadcrumbScrollState.animateScrollTo(breadcrumbScrollState.maxValue)
+                        }
                         Row(
                             modifier = Modifier
                                 .weight(1f)
-                                .horizontalScroll(rememberScrollState()),
+                                .horizontalScroll(breadcrumbScrollState),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             val pathSegments = state.currentFilePath.split("/").filter { it.isNotEmpty() }
@@ -294,10 +298,10 @@ fun FilesScreen(
                     }
 
                     // Action Buttons Row (Upload, New File, New Folder, Multi-select)
-                    Row(
+                    FlowRow(
                         modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         XPillOutlineButton(
                             text = "MULTI-SELECT",
@@ -305,27 +309,24 @@ fun FilesScreen(
                             onClick = { viewModel.toggleMultiSelectMode() },
                             compact = true
                         )
-
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            XPillButton(
-                                text = "UPLOAD",
-                                icon = Icons.Default.CloudUpload,
-                                onClick = { safOpenDocsLauncher.launch(arrayOf("*/*")) },
-                                compact = true
-                            )
-                            XPillOutlineButton(
-                                text = "NEW FILE",
-                                icon = Icons.Default.Add,
-                                onClick = { showCreateFileDialog = true },
-                                compact = true
-                            )
-                            XPillOutlineButton(
-                                text = "NEW FOLDER",
-                                icon = Icons.Default.CreateNewFolder,
-                                onClick = { showCreateFolderDialog = true },
-                                compact = true
-                            )
-                        }
+                        XPillButton(
+                            text = "UPLOAD",
+                            icon = Icons.Default.CloudUpload,
+                            onClick = { safOpenDocsLauncher.launch(arrayOf("*/*")) },
+                            compact = true
+                        )
+                        XPillOutlineButton(
+                            text = "NEW FILE",
+                            icon = Icons.Default.Add,
+                            onClick = { showCreateFileDialog = true },
+                            compact = true
+                        )
+                        XPillOutlineButton(
+                            text = "NEW FOLDER",
+                            icon = Icons.Default.CreateNewFolder,
+                            onClick = { showCreateFolderDialog = true },
+                            compact = true
+                        )
                     }
                 }
             }
@@ -368,8 +369,8 @@ fun FilesScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(horizontal = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-                contentPadding = PaddingValues(top = 8.dp, bottom = 120.dp)
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+                contentPadding = PaddingValues(top = 8.dp, bottom = NavBarReserved)
             ) {
                 if (state.searchResults != null) {
                     item {
@@ -845,7 +846,7 @@ fun FileRowItem(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp),
+                .padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {

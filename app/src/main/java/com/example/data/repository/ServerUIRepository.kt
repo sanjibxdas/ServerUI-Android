@@ -8,6 +8,10 @@ import com.example.data.ssh.SshDirectManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+import com.example.data.local.db.AppDatabase
+import com.example.data.local.db.TelemetrySnapshot
+import kotlinx.coroutines.flow.Flow
+
 /**
  * Repository for ServerUI on Android.
  * Runs 100% standalone on-device using embedded JSch SSH & SFTP engine.
@@ -17,14 +21,67 @@ class ServerUIRepository(private val context: Context) {
 
     private val prefs = context.getSharedPreferences("serverui_prefs", Context.MODE_PRIVATE)
     val localStore = LocalServerStore(context)
+    val database = AppDatabase.getInstance(context)
+    val telemetryDao = database.telemetryDao()
 
     companion object {
         private const val KEY_SSH_TIMEOUT = "key_ssh_timeout"
         private const val KEY_KEEP_ALIVE = "key_keep_alive"
         private const val KEY_POLL_INTERVAL = "key_poll_interval"
+        private const val KEY_RING_BUFFER_CAP = "key_ring_buffer_cap"
+        const val KEY_PERSISTENT_SERVICE_ENABLED = "key_persistent_service_enabled"
+        const val KEY_BACKGROUND_POLL_INTERVAL = "key_watchdog_interval_seconds"
         const val MODE_DIRECT = "direct"
         const val DEFAULT_TIMEOUT_SECONDS = 10
         const val DEFAULT_POLL_SECONDS = 3
+        const val DEFAULT_RING_BUFFER_CAP = 2000
+        const val DEFAULT_BACKGROUND_INTERVAL_SECONDS = 60
+    }
+
+    fun isPersistentBackgroundEnabled(): Boolean = prefs.getBoolean(KEY_PERSISTENT_SERVICE_ENABLED, true)
+
+    fun setPersistentBackgroundEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_PERSISTENT_SERVICE_ENABLED, enabled).apply()
+    }
+
+    fun getBackgroundPollIntervalSeconds(): Int = prefs.getInt(KEY_BACKGROUND_POLL_INTERVAL, DEFAULT_BACKGROUND_INTERVAL_SECONDS)
+
+    fun setBackgroundPollIntervalSeconds(seconds: Int) {
+        prefs.edit().putInt(KEY_BACKGROUND_POLL_INTERVAL, seconds).apply()
+    }
+
+    fun getRingBufferCap(): Int = prefs.getInt(KEY_RING_BUFFER_CAP, DEFAULT_RING_BUFFER_CAP)
+
+    fun setRingBufferCap(cap: Int) {
+        prefs.edit().putInt(KEY_RING_BUFFER_CAP, cap).apply()
+    }
+
+    suspend fun recordTelemetry(serverId: String, metrics: ServerMetrics) = withContext(Dispatchers.IO) {
+        try {
+            telemetryDao.insertSnapshot(
+                TelemetrySnapshot(
+                    serverId = serverId,
+                    timestamp = System.currentTimeMillis(),
+                    cpuUsage = metrics.cpuUsage,
+                    memoryUsage = metrics.memoryUsage,
+                    diskUsage = metrics.diskUsage,
+                    networkRxRate = metrics.netRxBps,
+                    networkTxRate = metrics.netTxBps
+                )
+            )
+            telemetryDao.enforceRingBufferCap(serverId, getRingBufferCap())
+        } catch (_: Exception) {}
+    }
+
+    fun getTelemetrySnapshots(serverId: String, window: String): Flow<List<TelemetrySnapshot>> {
+        val now = System.currentTimeMillis()
+        val since = when (window.lowercase()) {
+            "1h" -> now - 3600 * 1000L
+            "24h" -> now - 24 * 3600 * 1000L
+            "7d" -> now - 7 * 24 * 3600 * 1000L
+            else -> now - 3600 * 1000L
+        }
+        return telemetryDao.getSnapshotsForServerSince(serverId, since)
     }
 
     init {
@@ -107,7 +164,9 @@ class ServerUIRepository(private val context: Context) {
     suspend fun connectServer(id: String): Result<ServerMetrics> = withContext(Dispatchers.IO) {
         val server = localStore.getServer(id)
             ?: return@withContext Result.failure(Exception("Server not found in local store"))
-        SshDirectManager.fetchMetrics(server)
+        val res = SshDirectManager.fetchMetrics(server)
+        res.getOrNull()?.let { recordTelemetry(id, it) }
+        res
     }
 
     suspend fun disconnectServer(id: String): Result<ServerPublic> = withContext(Dispatchers.IO) {
@@ -120,7 +179,9 @@ class ServerUIRepository(private val context: Context) {
     suspend fun getLiveMetrics(serverId: String): Result<ServerMetrics> = withContext(Dispatchers.IO) {
         val server = localStore.getServer(serverId)
             ?: return@withContext Result.failure(Exception("Server not found in local store"))
-        SshDirectManager.fetchMetrics(server)
+        val res = SshDirectManager.fetchMetrics(server)
+        res.getOrNull()?.let { recordTelemetry(serverId, it) }
+        res
     }
 
     suspend fun inspectProcess(serverId: String, pid: Int): Result<ProcessDetail> = withContext(Dispatchers.IO) {
@@ -261,4 +322,12 @@ class ServerUIRepository(private val context: Context) {
     fun addBookmark(serverId: String, path: String): List<String> = localStore.addBookmark(serverId, path)
 
     fun removeBookmark(serverId: String, path: String): List<String> = localStore.removeBookmark(serverId, path)
+
+    fun updateAlertConfig(serverId: String, config: ServerAlertConfig) {
+        localStore.updateAlertConfig(serverId, config)
+    }
+
+    fun updateAlertState(serverId: String, isAlerting: Boolean, reason: String?, breachStart: Long? = null) {
+        localStore.updateAlertState(serverId, isAlerting, reason, breachStart)
+    }
 }

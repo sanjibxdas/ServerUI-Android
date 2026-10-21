@@ -21,7 +21,11 @@ data class SavedServer(
     val privateKey: String? = null,
     val iconId: String? = "server",
     val status: String = "unknown",
-    val lastSeen: String? = null
+    val lastSeen: String? = null,
+    val alertConfig: com.example.data.model.ServerAlertConfig = com.example.data.model.ServerAlertConfig(),
+    val isAlerting: Boolean = false,
+    val alertReason: String? = null,
+    val cpuBreachStartTime: Long? = null
 ) {
     fun toPublic(connected: Boolean = false): ServerPublic = ServerPublic(
         id = id,
@@ -33,7 +37,21 @@ data class SavedServer(
         iconId = iconId,
         status = status,
         connected = connected,
-        lastSeen = lastSeen
+        lastSeen = lastSeen,
+        isAlerting = isAlerting,
+        alertReason = alertReason,
+        alertConfig = alertConfig
+    )
+
+    fun toDraftRequest(): com.example.data.model.ServerDraftRequest = com.example.data.model.ServerDraftRequest(
+        name = name,
+        host = host,
+        port = port,
+        username = username,
+        authType = authType,
+        password = password,
+        privateKey = privateKey,
+        serverId = id
     )
 }
 
@@ -141,6 +159,29 @@ class LocalServerStore(context: Context) {
         prefs.edit().putString("bookmarks_$serverId", current.joinToString("\n")).apply()
         return current
     }
+
+    fun updateAlertConfig(id: String, config: com.example.data.model.ServerAlertConfig) {
+        val current = getServers().toMutableList()
+        val index = current.indexOfFirst { it.id == id }
+        if (index != -1) {
+            current[index] = current[index].copy(alertConfig = config)
+            persist(current)
+        }
+    }
+
+    fun updateAlertState(id: String, isAlerting: Boolean, reason: String?, breachStart: Long?) {
+        val current = getServers().toMutableList()
+        val index = current.indexOfFirst { it.id == id }
+        if (index != -1) {
+            current[index] = current[index].copy(
+                isAlerting = isAlerting,
+                alertReason = reason,
+                cpuBreachStartTime = breachStart
+            )
+            persist(current)
+        }
+    }
+
 
     private fun persist(servers: List<SavedServer>) {
         val json = adapter.toJson(servers)

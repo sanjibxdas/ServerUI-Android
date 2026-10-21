@@ -192,6 +192,24 @@ class SyntaxVisualTransformation(private val fileExtension: String) : VisualTran
 }
 
 /**
+ * Detect language from filename or extension for syntax highlighting.
+ */
+fun detectLanguage(filename: String): String {
+    val clean = filename.lowercase().substringAfterLast('/')
+    if (clean.startsWith(".env")) return "env"
+    val ext = clean.substringAfterLast('.', "")
+    return when (ext) {
+        "json" -> "json"
+        "yaml", "yml" -> "yaml"
+        "sh", "bash", "zsh" -> "shell"
+        "py" -> "python"
+        "env" -> "env"
+        "ini", "conf", "cfg" -> "ini"
+        else -> "text"
+    }
+}
+
+/**
  * Permissions converter utilities for chmod rwx checkboxes and octal display.
  */
 object ChmodUtils {

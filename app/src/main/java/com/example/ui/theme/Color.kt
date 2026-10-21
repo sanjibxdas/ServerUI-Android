@@ -22,6 +22,7 @@ val ColorMute = Color(0xFF7D8187)
 // Illustrative & Status Accents
 val ColorAccentSunset = Color(0xFFFF7A17)    // Warm orange #ff7a17 (warn / connecting)
 val ColorAccentSunsetSoft = Color(0xFFFFC285)// #ffc285
+val ColorAccentAmber = Color(0xFFF59E0B)     // Warm amber #f59e0b (favorites / warning)
 val ColorAccentDusk = Color(0xFF7C3AED)      // Deep purple #7c3aed
 val ColorAccentTwilight = Color(0xFFC4B5FD)  // Soft violet #c4b5fd
 val ColorAccentBreeze = Color(0xFFA0C3EC)    // Soft blue #a0c3ec (telemetry / online)
@@ -34,6 +35,7 @@ val ColorPillOutlineSubtle = Color(0x26FFFFFF) // rgba(255, 255, 255, 0.15)
 // Status Cues
 val ColorStatusOnline = Color(0xFF22C55E)    // Green indicator
 val ColorStatusConnecting = Color(0xFFFF7A17)// Sunset orange
+val ColorStatusWarning = ColorAccentAmber    // Amber warning
 val ColorStatusError = Color(0xFFEF4444)     // Red error
 
 // ─── Legacy Mappings for Backward Compatibility ─────────────────────────────

@@ -30,6 +30,7 @@ import com.example.data.model.ServiceInfo
 import com.example.ui.components.*
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.ServerUIViewModel
+import java.util.Locale
 
 @Composable
 fun DashboardScreen(
@@ -97,7 +98,7 @@ fun DashboardScreen(
                             .fillMaxSize()
                             .padding(horizontal = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp),
-                        contentPadding = PaddingValues(top = 8.dp, bottom = 120.dp)
+                        contentPadding = PaddingValues(top = 8.dp, bottom = NavBarReserved)
                     ) {
                         // Active server SSH metrics warning if unreachable
                         if (state.metricsErrorMessage != null && selectedServer != null) {
@@ -142,8 +143,8 @@ fun DashboardScreen(
                             }
                         }
 
-                        // Fleet Server Selector Strip
-                        if (state.servers.isNotEmpty()) {
+                        // Fleet Server Selector Strip (only shown if multi-server)
+                        if (state.servers.size > 1) {
                             item {
                                 Column {
                                     Row(
@@ -264,31 +265,45 @@ fun DashboardScreen(
                                         HorizontalDivider(color = ColorHairline, thickness = 1.dp)
                                         Spacer(modifier = Modifier.height(14.dp))
 
-                                        Row(
+                                        val kernelRelease = remember(metrics.kernel) {
+                                            val tokens = metrics.kernel.trim().split("\\s+".toRegex()).filter { it.isNotEmpty() }
+                                            if (tokens.size >= 3) tokens[2] else metrics.kernel.ifEmpty { "Standard" }
+                                        }
+
+                                        Column(
                                             modifier = Modifier.fillMaxWidth(),
-                                            horizontalArrangement = Arrangement.SpaceBetween
+                                            verticalArrangement = Arrangement.spacedBy(10.dp)
                                         ) {
-                                            Column {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
                                                 XEyebrowMono("OS & Arch")
-                                                Spacer(modifier = Modifier.height(2.dp))
                                                 Text(
                                                     text = "${metrics.osName.ifEmpty { "Linux" }} (${metrics.arch.ifEmpty { "x86_64" }})",
                                                     style = TypographyBodySM,
                                                     color = ColorInk
                                                 )
                                             }
-                                            Column {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
                                                 XEyebrowMono("Kernel")
-                                                Spacer(modifier = Modifier.height(2.dp))
                                                 Text(
-                                                    text = metrics.kernel.ifEmpty { "Standard" },
+                                                    text = kernelRelease,
                                                     style = TypographyBodySM,
                                                     color = ColorInk
                                                 )
                                             }
-                                            Column {
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                                verticalAlignment = Alignment.CenterVertically
+                                            ) {
                                                 XEyebrowMono("Uptime")
-                                                Spacer(modifier = Modifier.height(2.dp))
                                                 Text(
                                                     text = formatUptime(metrics.uptimeSeconds),
                                                     style = TypographyCaptionMono,
@@ -304,7 +319,7 @@ fun DashboardScreen(
                                             horizontalArrangement = Arrangement.SpaceBetween
                                         ) {
                                             Text(
-                                                text = "LOAD: ${metrics.load1} / ${metrics.load5} / ${metrics.load15}",
+                                                text = "LOAD: 1m ${String.format(Locale.US, "%.2f", metrics.load1)} / 5m ${String.format(Locale.US, "%.2f", metrics.load5)} / 15m ${String.format(Locale.US, "%.2f", metrics.load15)}",
                                                 style = TypographyCaptionMonoSM,
                                                 color = ColorBodyMid
                                             )
@@ -329,8 +344,7 @@ fun DashboardScreen(
                                         value = "${formatPercent(metrics.cpuUsage)} utilized",
                                         subValue = metrics.cpuModel.ifEmpty { "${metrics.cpuCores} Threads" },
                                         percent = metrics.cpuUsage,
-                                        icon = Icons.Default.Memory,
-                                        color = CyanPrimary
+                                        icon = Icons.Default.Memory
                                     )
 
                                     // Core Usage Mini-strip (if multi-core)
@@ -392,8 +406,7 @@ fun DashboardScreen(
                                         value = "${formatBytes(metrics.memoryUsedBytes)} / ${formatBytes(metrics.memoryTotalBytes)}",
                                         subValue = "Free: ${formatBytes(metrics.memoryAvailableBytes)}",
                                         percent = metrics.memoryUsage,
-                                        icon = Icons.Default.Storage,
-                                        color = ColorPrimary
+                                        icon = Icons.Default.Storage
                                     )
 
                                     // Disk Gauge
@@ -402,8 +415,7 @@ fun DashboardScreen(
                                         value = "${formatBytes(metrics.diskUsedBytes)} / ${formatBytes(metrics.diskTotalBytes)}",
                                         subValue = "Free: ${formatBytes(metrics.diskFreeBytes)}",
                                         percent = metrics.diskUsage,
-                                        icon = Icons.Default.Folder,
-                                        color = ColorPrimary
+                                        icon = Icons.Default.Folder
                                     )
 
                                     // Disk Mounts breakdown
@@ -531,33 +543,44 @@ fun DashboardScreen(
                                                     Icon(
                                                         imageVector = Icons.Default.List,
                                                         contentDescription = null,
-                                                        tint = CyanPrimary,
+                                                        tint = ColorPrimary,
                                                         modifier = Modifier.size(16.dp)
                                                     )
                                                     Spacer(modifier = Modifier.width(6.dp))
                                                     Text(
                                                         text = "${metrics.processCount} Processes (${metrics.processRunning} running)",
-                                                        style = MaterialTheme.typography.bodySmall,
-                                                        color = Slate200
+                                                        style = TypographyBodySM,
+                                                        color = ColorBody
                                                     )
                                                 }
                                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                                     Icon(
                                                         imageVector = Icons.Default.Settings,
                                                         contentDescription = null,
-                                                        tint = if (metrics.serviceFailed > 0) RoseError else GreenOnline,
+                                                        tint = if (metrics.serviceFailed > 0) ColorStatusError else ColorStatusOnline,
                                                         modifier = Modifier.size(16.dp)
                                                     )
                                                     Spacer(modifier = Modifier.width(6.dp))
                                                     Text(
                                                         text = "${metrics.serviceRunning} Active${if (metrics.serviceFailed > 0) " (${metrics.serviceFailed} failed)" else ""}",
-                                                        style = MaterialTheme.typography.bodySmall,
-                                                        color = if (metrics.serviceFailed > 0) RoseError else Slate200
+                                                        style = TypographyBodySM,
+                                                        color = if (metrics.serviceFailed > 0) ColorStatusError else ColorBody
                                                     )
                                                 }
                                             }
                                         }
                                     }
+
+                                    // Historical Telemetry Sparkline & Line Chart (Room-backed, 1h/24h/7d)
+                                    HistoricalMetricsCard(
+                                        snapshots = state.telemetrySnapshots,
+                                        selectedWindow = state.selectedTimeWindow,
+                                        onWindowSelected = { viewModel.setTimeWindow(it) },
+                                        selectedMetric = state.selectedMetricType,
+                                        onMetricSelected = { viewModel.setMetricType(it) },
+                                        ringBufferCap = state.ringBufferCap,
+                                        onSetRingBufferCap = { viewModel.setRingBufferCap(it) }
+                                    )
                                 }
                             }
                         }
@@ -565,7 +588,7 @@ fun DashboardScreen(
                 }
                 1 -> {
                     // Processes Tab directly inside Dashboard
-                    Box(modifier = Modifier.padding(bottom = 110.dp)) {
+                    Box(modifier = Modifier.padding(bottom = NavBarReserved)) {
                         ProcessesTabContent(
                             viewModel = viewModel,
                             onKillProcess = { processToKill = it }
@@ -574,7 +597,7 @@ fun DashboardScreen(
                 }
                 2 -> {
                     // Services Tab directly inside Dashboard
-                    Box(modifier = Modifier.padding(bottom = 110.dp)) {
+                    Box(modifier = Modifier.padding(bottom = NavBarReserved)) {
                         ServicesTabContent(
                             viewModel = viewModel,
                             onControlService = { service, action -> serviceToControl = Pair(service, action) }
@@ -722,7 +745,7 @@ fun DashboardTabChip(
             .clickable(onClick = onClick)
     ) {
         Row(
-            modifier = Modifier.padding(vertical = 7.dp, horizontal = 12.dp),
+            modifier = Modifier.padding(vertical = 7.dp, horizontal = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
         ) {
@@ -732,11 +755,13 @@ fun DashboardTabChip(
                 tint = if (isSelected) ColorInk else ColorBodyMid,
                 modifier = Modifier.size(15.dp)
             )
-            Spacer(modifier = Modifier.width(6.dp))
+            Spacer(modifier = Modifier.width(4.dp))
             Text(
                 text = if (count != null && count > 0) "${label.uppercase()} ($count)" else label.uppercase(),
                 style = TypographyCaptionMonoSM,
-                color = if (isSelected) ColorInk else ColorBodyMid
+                color = if (isSelected) ColorInk else ColorBodyMid,
+                maxLines = 1,
+                softWrap = false
             )
         }
     }

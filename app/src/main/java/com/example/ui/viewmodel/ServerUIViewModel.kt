@@ -9,6 +9,8 @@ import com.example.data.model.*
 import com.example.data.network.TerminalState
 import com.example.data.network.TerminalWebSocketManager
 import com.example.data.repository.ServerUIRepository
+import com.example.data.worker.BatteryOptimizationHelper
+import com.example.data.worker.ServerWatchdogForegroundService
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -61,8 +63,18 @@ data class UIState(
     val isTestingDraft: Boolean = false,
     val draftTestResult: ServerDraftTest? = null,
     val testErrorMessage: String? = null,
+    val activeSnackbarMessage: String? = null,
 
-    val activeSnackbarMessage: String? = null
+    val selectedTimeWindow: String = "1h",
+    val selectedMetricType: String = "cpu",
+    val telemetrySnapshots: List<com.example.data.local.db.TelemetrySnapshot> = emptyList(),
+    val ringBufferCap: Int = 2000,
+
+    val isPersistentBackgroundEnabled: Boolean = true,
+    val isForegroundServiceRunning: Boolean = false,
+    val backgroundPollIntervalSeconds: Int = 60,
+    val isBatteryOptimizationIgnored: Boolean = false,
+    val lastWatchdogSummary: String = ""
 )
 
 class ServerUIViewModel(application: Application) : AndroidViewModel(application) {
@@ -74,12 +86,17 @@ class ServerUIViewModel(application: Application) : AndroidViewModel(application
         UIState(
             sshTimeoutSeconds = repository.getSshTimeoutSeconds(),
             pollIntervalSeconds = repository.getPollIntervalSeconds(),
+            ringBufferCap = repository.getRingBufferCap(),
+            isPersistentBackgroundEnabled = repository.isPersistentBackgroundEnabled(),
+            backgroundPollIntervalSeconds = repository.getBackgroundPollIntervalSeconds(),
+            isBatteryOptimizationIgnored = BatteryOptimizationHelper.isIgnoringBatteryOptimizations(application),
             backendHealthy = true
         )
     )
     val uiState: StateFlow<UIState> = _uiState.asStateFlow()
 
     private var metricsJob: Job? = null
+    private var historicalJob: Job? = null
 
     init {
         loadServers()
@@ -100,6 +117,31 @@ class ServerUIViewModel(application: Application) : AndroidViewModel(application
                 _uiState.update { it.copy(terminalState = termState) }
             }
         }
+
+        // Start persistent background service if enabled
+        if (repository.isPersistentBackgroundEnabled()) {
+            try {
+                ServerWatchdogForegroundService.start(application)
+            } catch (_: Exception) {}
+        }
+
+        // Collect persistent foreground service state & summaries
+        viewModelScope.launch {
+            ServerWatchdogForegroundService.isRunningFlow.collect { running ->
+                _uiState.update { it.copy(isForegroundServiceRunning = running) }
+            }
+        }
+
+        viewModelScope.launch {
+            ServerWatchdogForegroundService.lastCheckSummary.collect { summary ->
+                _uiState.update { it.copy(lastWatchdogSummary = summary) }
+            }
+        }
+
+        // Schedule autonomous background watchdog polling fallback
+        try {
+            com.example.data.worker.ServerMonitorWorker.schedule(application)
+        } catch (_: Exception) {}
     }
 
     fun checkBackendHealth() {
@@ -141,6 +183,7 @@ class ServerUIViewModel(application: Application) : AndroidViewModel(application
                     }
                     if (_uiState.value.selectedServerId != null) {
                         startMetricsPolling()
+                        observeHistoricalMetrics(_uiState.value.selectedServerId!!)
                         loadFiles("~")
                     }
                 },
@@ -159,6 +202,7 @@ class ServerUIViewModel(application: Application) : AndroidViewModel(application
     fun selectServer(serverId: String) {
         _uiState.update { it.copy(selectedServerId = serverId) }
         startMetricsPolling()
+        observeHistoricalMetrics(serverId, _uiState.value.selectedTimeWindow)
         loadFiles("~")
         // If terminal was connected, reconnect for new server
         if (_uiState.value.terminalState != TerminalState.Disconnected) {
@@ -178,6 +222,7 @@ class ServerUIViewModel(application: Application) : AndroidViewModel(application
                 res.fold(
                     onSuccess = { data ->
                         _uiState.update { it.copy(metrics = data, metricsErrorMessage = null) }
+                        evaluateForegroundAlerts(currentId, data)
                     },
                     onFailure = { err ->
                         // Don't wipe current metrics immediately on transient error
@@ -187,6 +232,108 @@ class ServerUIViewModel(application: Application) : AndroidViewModel(application
                 delay(2000)
             }
         }
+    }
+
+    private fun evaluateForegroundAlerts(serverId: String, data: ServerMetrics) {
+        val srv = _uiState.value.servers.firstOrNull { it.id == serverId } ?: return
+        val cfg = srv.alertConfig
+        if (!cfg.enabled) return
+
+        val reasons = mutableListOf<String>()
+        if (data.cpuUsage >= cfg.cpuThreshold) {
+            reasons.add("CPU at ${String.format(java.util.Locale.US, "%.1f", data.cpuUsage)}% > ${cfg.cpuThreshold.toInt()}%")
+        }
+        if (data.memoryUsage >= cfg.ramThreshold) {
+            reasons.add("RAM at ${String.format(java.util.Locale.US, "%.1f", data.memoryUsage)}% > ${cfg.ramThreshold.toInt()}%")
+        }
+        if (data.diskUsage >= cfg.diskThreshold) {
+            reasons.add("Disk at ${String.format(java.util.Locale.US, "%.1f", data.diskUsage)}% > ${cfg.diskThreshold.toInt()}%")
+        }
+        if (cfg.alertOnFailedService && data.serviceFailed > 0) {
+            reasons.add("${data.serviceFailed} unit(s) in failed state")
+        }
+
+        val isAlerting = reasons.isNotEmpty()
+        val alertReason = if (isAlerting) reasons.joinToString("; ") else null
+
+        if (srv.isAlerting != isAlerting || srv.alertReason != alertReason) {
+            repository.updateAlertState(serverId, isAlerting, alertReason)
+            _uiState.update { state ->
+                state.copy(
+                    servers = state.servers.map { s ->
+                        if (s.id == serverId) s.copy(isAlerting = isAlerting, alertReason = alertReason) else s
+                    }
+                )
+            }
+        }
+    }
+
+    fun updateServerAlertConfig(serverId: String, config: ServerAlertConfig) {
+        repository.updateAlertConfig(serverId, config)
+        _uiState.update { state ->
+            state.copy(
+                servers = state.servers.map { srv ->
+                    if (srv.id == serverId) srv.copy(alertConfig = config) else srv
+                }
+            )
+        }
+        showSnackbar("Watchdog alerts updated for ${config.cpuThreshold.toInt()}% CPU / ${config.ramThreshold.toInt()}% RAM")
+    }
+
+    fun runWatchdogCheckNow() {
+        val app = getApplication<Application>()
+        try {
+            ServerWatchdogForegroundService.triggerCheck(app)
+        } catch (_: Exception) {}
+        try {
+            com.example.data.worker.ServerMonitorWorker.runOnce(app)
+        } catch (_: Exception) {}
+        showSnackbar("Watchdog check cycle triggered")
+        viewModelScope.launch {
+            delay(1500)
+            loadServers(autoSelectFirst = false)
+        }
+    }
+
+    fun setPersistentBackgroundEnabled(enabled: Boolean) {
+        repository.setPersistentBackgroundEnabled(enabled)
+        val app = getApplication<Application>()
+        if (enabled) {
+            try {
+                ServerWatchdogForegroundService.start(app)
+                showSnackbar("Persistent background monitor enabled")
+            } catch (e: Exception) {
+                showSnackbar("Failed to start background monitor: ${e.message}")
+            }
+        } else {
+            ServerWatchdogForegroundService.stop(app)
+            showSnackbar("Persistent background monitor disabled")
+        }
+        _uiState.update {
+            it.copy(
+                isPersistentBackgroundEnabled = enabled,
+                isBatteryOptimizationIgnored = BatteryOptimizationHelper.isIgnoringBatteryOptimizations(app)
+            )
+        }
+    }
+
+    fun setBackgroundPollInterval(seconds: Int) {
+        repository.setBackgroundPollIntervalSeconds(seconds)
+        _uiState.update { it.copy(backgroundPollIntervalSeconds = seconds) }
+        val app = getApplication<Application>()
+        if (_uiState.value.isPersistentBackgroundEnabled) {
+            ServerWatchdogForegroundService.start(app)
+        }
+        showSnackbar("Background poll interval set to ${seconds}s")
+    }
+
+    fun refreshBatteryOptimizationStatus() {
+        val ignored = BatteryOptimizationHelper.isIgnoringBatteryOptimizations(getApplication())
+        _uiState.update { it.copy(isBatteryOptimizationIgnored = ignored) }
+    }
+
+    fun requestIgnoreBatteryOptimizations() {
+        BatteryOptimizationHelper.requestIgnoreBatteryOptimizations(getApplication())
     }
 
     fun stopMetricsPolling() {
@@ -843,6 +990,32 @@ class ServerUIViewModel(application: Application) : AndroidViewModel(application
         _uiState.update { it.copy(terminalLines = emptyList()) }
     }
 
+    // Historical Room Telemetry
+    fun setTimeWindow(window: String) {
+        _uiState.update { it.copy(selectedTimeWindow = window) }
+        val serverId = _uiState.value.selectedServerId ?: return
+        observeHistoricalMetrics(serverId, window)
+    }
+
+    fun setMetricType(metricType: String) {
+        _uiState.update { it.copy(selectedMetricType = metricType) }
+    }
+
+    fun setRingBufferCap(cap: Int) {
+        repository.setRingBufferCap(cap)
+        _uiState.update { it.copy(ringBufferCap = cap) }
+        showSnackbar("Ring-buffer cap set to $cap snapshots")
+    }
+
+    fun observeHistoricalMetrics(serverId: String, window: String = _uiState.value.selectedTimeWindow) {
+        historicalJob?.cancel()
+        historicalJob = viewModelScope.launch {
+            repository.getTelemetrySnapshots(serverId, window).collect { list ->
+                _uiState.update { it.copy(telemetrySnapshots = list) }
+            }
+        }
+    }
+
     fun showSnackbar(message: String) {
         _uiState.update { it.copy(activeSnackbarMessage = message) }
     }
@@ -854,6 +1027,7 @@ class ServerUIViewModel(application: Application) : AndroidViewModel(application
     override fun onCleared() {
         super.onCleared()
         metricsJob?.cancel()
+        historicalJob?.cancel()
         terminalManager.disconnect()
     }
 }

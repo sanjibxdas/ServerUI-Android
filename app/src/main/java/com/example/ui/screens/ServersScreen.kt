@@ -55,7 +55,7 @@ fun ServersScreen(
                     .fillMaxSize()
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(top = 16.dp, bottom = 120.dp)
+                contentPadding = PaddingValues(top = 16.dp, bottom = NavBarReserved)
             ) {
                 items(state.servers, key = { it.id }) { server ->
                     val isConnected = server.connected == true

@@ -26,16 +26,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.network.TerminalState
 import com.example.ui.components.EmptyStateView
+import com.example.ui.components.NavBarReserved
 import com.example.ui.components.XEyebrowMono
 import com.example.ui.components.XHairlineDivider
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.ServerUIViewModel
 
-// Quick regex to strip ANSI color escape codes for clean mobile rendering
-private val ansiRegex = Regex("\u001B\\[[;?0-9]*[a-zA-Z]")
+// Robust regex to strip ANSI CSI, OSC, and charset escape sequences for clean mobile rendering
+private val ansiRegex = Regex("\u001B\\[[0-?]*[ -/]*[@-~]|\u001B\\][^\u0007\u001B]*(?:\u0007|\u001B\\\\)|\u001B[()][A-Z0-9]")
 
 fun cleanAnsi(text: String): String {
-    return text.replace(ansiRegex, "")
+    return text.replace(ansiRegex, "").replace("\r", "")
 }
 
 @Composable
@@ -58,6 +59,7 @@ fun TerminalScreen(
         modifier = modifier
             .fillMaxSize()
             .background(ColorCanvas)
+            .imePadding()
     ) {
         // Top Terminal Bar
         Surface(
@@ -165,7 +167,8 @@ fun TerminalScreen(
                                 text = cleaned,
                                 style = TypographyCaptionMonoSM.copy(
                                     fontSize = 12.sp,
-                                    lineHeight = 16.sp
+                                    lineHeight = 16.sp,
+                                    fontFeatureSettings = "liga 0, calt 0"
                                 ),
                                 color = if (cleaned.startsWith("[") && cleaned.endsWith("]")) ColorInk else ColorBody
                             )
@@ -205,7 +208,7 @@ fun TerminalScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 104.dp),
+                        .padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = NavBarReserved),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     OutlinedTextField(
@@ -237,11 +240,12 @@ fun TerminalScreen(
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = ColorPrimary, contentColor = ColorOnPrimary),
                         shape = CircleShape,
+                        contentPadding = PaddingValues(0.dp),
                         modifier = Modifier
                             .size(48.dp)
                             .testTag("terminal_send_button")
                     ) {
-                        Icon(Icons.Default.Send, contentDescription = "Send", modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Send, contentDescription = "Send", modifier = Modifier.size(20.dp))
                     }
                 }
             }

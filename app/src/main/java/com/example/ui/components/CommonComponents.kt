@@ -113,6 +113,7 @@ fun XPillButton(
     val horizontalPad = if (compact) 12.dp else 16.dp
     val verticalPad = if (compact) 6.dp else 8.dp
     val minHeight = if (compact) 36.dp else 40.dp
+
     Button(
         onClick = onClick,
         enabled = enabled,
@@ -124,9 +125,7 @@ fun XPillButton(
             disabledContentColor = ColorBodyMid
         ),
         contentPadding = PaddingValues(horizontal = horizontalPad, vertical = verticalPad),
-        modifier = modifier
-            .heightIn(min = minHeight)
-            .border(width = 1.dp, color = ColorPrimary, shape = CircleShape)
+        modifier = modifier.heightIn(min = minHeight)
     ) {
         if (icon != null) {
             Icon(
@@ -264,6 +263,13 @@ fun ServerStatusBadge(
     }
 }
 
+// ─── Floating Navigation Layout Constant ────────────────────────────────────
+/**
+ * Shared vertical height reserved for the bottom navigation bar.
+ * Measured rendered height: 58.dp (bar height) + 2.dp (top padding) + 4.dp (bottom padding) = 64.dp.
+ */
+val NavBarReserved: Dp = 64.dp
+
 // ─── Metric Gauge Card (xAI Precision Card) ─────────────────────────────────
 @Composable
 fun MetricGaugeCard(
@@ -272,7 +278,6 @@ fun MetricGaugeCard(
     subValue: String,
     percent: Double,
     icon: ImageVector,
-    color: Color = ColorPrimary,
     modifier: Modifier = Modifier
 ) {
     XCard(modifier = modifier) {
@@ -319,6 +324,8 @@ fun MetricGaugeCard(
                 .clip(CircleShape),
             color = ColorPrimary,
             trackColor = ColorCanvasMid,
+            gapSize = 0.dp,
+            drawStopIndicator = {}
         )
 
         Spacer(modifier = Modifier.height(10.dp))
@@ -339,24 +346,6 @@ fun MetricGaugeCard(
             )
         }
     }
-}
-
-// ─── Replacement for Legacy LiquidGlassCard ─────────────────────────────────
-@Composable
-fun LiquidGlassCard(
-    modifier: Modifier = Modifier,
-    shape: RoundedCornerShape = RoundedCornerShape(8.dp),
-    accentColor: Color = ColorHairline,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    // xAI Card: strict charcoal card fill, 1px hairline border, NO heavy glow or shadows
-    XCard(
-        modifier = modifier,
-        backgroundColor = ColorCanvasCard,
-        borderColor = ColorHairline,
-        shape = shape,
-        content = content
-    )
 }
 
 // ─── Empty State View (xAI Clean Aesthetic) ─────────────────────────────────

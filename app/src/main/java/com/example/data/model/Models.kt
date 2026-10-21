@@ -4,6 +4,22 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 @JsonClass(generateAdapter = true)
+data class ServerAlertConfig(
+    @Json(name = "enabled") val enabled: Boolean = true,
+    @Json(name = "cpuThreshold") val cpuThreshold: Double = 90.0,
+    @Json(name = "cpuSustainedMinutes") val cpuSustainedMinutes: Int = 15,
+    @Json(name = "ramThreshold") val ramThreshold: Double = 85.0,
+    @Json(name = "diskThreshold") val diskThreshold: Double = 90.0,
+    @Json(name = "alertOnFailedService") val alertOnFailedService: Boolean = true,
+    @Json(name = "alertOnUnreachable") val alertOnUnreachable: Boolean = true,
+    @Json(name = "muteWindowEnabled") val muteWindowEnabled: Boolean = false,
+    @Json(name = "muteStartHour") val muteStartHour: Int = 22,
+    @Json(name = "muteStartMinute") val muteStartMinute: Int = 0,
+    @Json(name = "muteEndHour") val muteEndHour: Int = 7,
+    @Json(name = "muteEndMinute") val muteEndMinute: Int = 0
+)
+
+@JsonClass(generateAdapter = true)
 data class ServerPublic(
     @Json(name = "id") val id: String = "",
     @Json(name = "name") val name: String = "",
@@ -18,7 +34,10 @@ data class ServerPublic(
     @Json(name = "connected") val connected: Boolean? = false,
     @Json(name = "lastSeen") val lastSeen: String? = null,
     @Json(name = "createdAt") val createdAt: String? = null,
-    @Json(name = "updatedAt") val updatedAt: String? = null
+    @Json(name = "updatedAt") val updatedAt: String? = null,
+    @Json(name = "isAlerting") val isAlerting: Boolean = false,
+    @Json(name = "alertReason") val alertReason: String? = null,
+    @Json(name = "alertConfig") val alertConfig: ServerAlertConfig = ServerAlertConfig()
 )
 
 @JsonClass(generateAdapter = true)
