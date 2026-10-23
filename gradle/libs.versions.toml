@@ -42,6 +42,7 @@ credentials = "1.5.0"
 googleid = "1.1.1"
 jsch = "0.2.23"
 work = "2.10.0"
+termlib = "0.2.0"
 
 
 [libraries]
@@ -98,6 +99,7 @@ androidx-credentials-play-services = { group = "androidx.credentials", name = "c
 googleid = { group = "com.google.android.libraries.identity.googleid", name = "googleid", version.ref = "googleid" }
 jsch = { group = "com.github.mwiede", name = "jsch", version.ref = "jsch" }
 androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "work" }
+connectbot-termlib = { group = "org.connectbot", name = "termlib", version.ref = "termlib" }
 
 
 [plugins]

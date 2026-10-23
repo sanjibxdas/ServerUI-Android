@@ -134,6 +134,7 @@ dependencies {
   implementation(libs.retrofit)
   implementation(libs.jsch)
   implementation(libs.androidx.work.runtime.ktx)
+  implementation(libs.connectbot.termlib)
   testImplementation(libs.androidx.compose.ui.test.junit4)
   testImplementation(libs.androidx.core)
   testImplementation(libs.androidx.junit)

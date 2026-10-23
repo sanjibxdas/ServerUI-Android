@@ -28,15 +28,30 @@ sealed interface TerminalState {
 
 class TerminalWebSocketManager {
 
+    @Volatile
     private var directSession: DirectTerminalSession? = null
+    @Volatile
     private var webSocket: WebSocket? = null
     private val scope = CoroutineScope(Dispatchers.IO)
+
+    @Volatile
+    private var currentCols: Int = 80
+    @Volatile
+    private var currentRows: Int = 24
+    @Volatile
+    private var currentWidthPx: Int = 640
+    @Volatile
+    private var currentHeightPx: Int = 480
 
     private val _state = MutableStateFlow<TerminalState>(TerminalState.Disconnected)
     val state: StateFlow<TerminalState> = _state.asStateFlow()
 
-    private val _outputFlow = MutableSharedFlow<String>(extraBufferCapacity = 256)
-    val outputFlow: SharedFlow<String> = _outputFlow.asSharedFlow()
+    private val _outputFlow = MutableSharedFlow<ByteArray>(extraBufferCapacity = 512)
+    val outputFlow: SharedFlow<ByteArray> = _outputFlow.asSharedFlow()
+
+    private fun emitText(text: String) {
+        _outputFlow.tryEmit(text.toByteArray(Charsets.UTF_8))
+    }
 
     /**
      * Connect directly from the Android phone to the SSH server using JSch
@@ -44,37 +59,50 @@ class TerminalWebSocketManager {
     fun connectDirect(server: SavedServer) {
         disconnect()
         _state.value = TerminalState.Connecting
-        _outputFlow.tryEmit("\r\n[Connecting to ${server.username}@${server.host}:${server.port} over SSH...]\r\n")
+        emitText("\r\n\u001B[2m[Connecting to ${server.username}@${server.host}:${server.port} over SSH...]\u001B[0m\r\n")
 
         scope.launch {
-            val res = SshDirectManager.startTerminal(server)
+            val res = SshDirectManager.startTerminal(
+                server = server,
+                cols = currentCols,
+                rows = currentRows,
+                widthPx = currentWidthPx,
+                heightPx = currentHeightPx
+            )
             res.fold(
                 onSuccess = { session ->
                     directSession = session
                     _state.value = TerminalState.Connected
-                    val buffer = ByteArray(2048)
+                    session.resize(currentCols, currentRows, currentWidthPx, currentHeightPx)
+                    val buffer = ByteArray(4096)
                     try {
-                        while (_state.value == TerminalState.Connected) {
+                        while (_state.value == TerminalState.Connected && session.isConnected) {
                             val read = session.inputStream.read(buffer)
                             if (read > 0) {
-                                val text = String(buffer, 0, read, Charsets.UTF_8)
-                                _outputFlow.tryEmit(text)
+                                _outputFlow.tryEmit(buffer.copyOf(read))
                             } else if (read == -1) {
                                 break
                             }
                         }
                     } catch (_: Exception) {
-                        if (_state.value == TerminalState.Connected) {
-                            _outputFlow.tryEmit("\r\n[SSH Connection Closed]\r\n")
-                        }
+                        // Stream closed or interrupted
                     } finally {
-                        _state.value = TerminalState.Disconnected
+                        try {
+                            session.close()
+                        } catch (_: Exception) {}
+                        if (directSession === session) {
+                            directSession = null
+                        }
+                        if (_state.value == TerminalState.Connected) {
+                            _state.value = TerminalState.Disconnected
+                        }
                     }
                 },
                 onFailure = { err ->
+                    directSession = null
                     val msg = err.localizedMessage ?: "Failed to open SSH terminal"
                     _state.value = TerminalState.Error(msg)
-                    _outputFlow.tryEmit("\r\n[SSH Terminal Error: $msg]\r\n")
+                    emitText("\r\n\u001B[31m[SSH Terminal Error: $msg]\u001B[0m\r\n")
                 }
             )
         }
@@ -98,7 +126,7 @@ class TerminalWebSocketManager {
         webSocket = ApiClient.okHttpClient.newWebSocket(requestBuilder.build(), object : WebSocketListener() {
             override fun onOpen(webSocket: WebSocket, response: Response) {
                 _state.value = TerminalState.Connected
-                sendResize(80, 24)
+                sendResize(currentCols, currentRows)
             }
 
             override fun onMessage(webSocket: WebSocket, text: String) {
@@ -108,7 +136,7 @@ class TerminalWebSocketManager {
                     if (type == "error") {
                         val msg = json.optString("message", "Terminal error")
                         _state.value = TerminalState.Error(msg)
-                        _outputFlow.tryEmit("\r\n[Terminal Error: $msg]\r\n")
+                        emitText("\r\n\u001B[31m[Terminal Error: $msg]\u001B[0m\r\n")
                         return
                     } else if (type == "status") {
                         val status = json.optString("status")
@@ -118,34 +146,79 @@ class TerminalWebSocketManager {
                         return
                     }
                 } catch (_: Exception) {}
-                _outputFlow.tryEmit(text)
+                emitText(text)
             }
 
             override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
-                _outputFlow.tryEmit(bytes.utf8())
+                _outputFlow.tryEmit(bytes.toByteArray())
             }
 
             override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
+                if (this@TerminalWebSocketManager.webSocket === webSocket) {
+                    this@TerminalWebSocketManager.webSocket = null
+                }
                 _state.value = TerminalState.Disconnected
             }
 
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+                if (this@TerminalWebSocketManager.webSocket === webSocket) {
+                    this@TerminalWebSocketManager.webSocket = null
+                }
                 _state.value = TerminalState.Disconnected
             }
 
             override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+                if (this@TerminalWebSocketManager.webSocket === webSocket) {
+                    this@TerminalWebSocketManager.webSocket = null
+                }
                 val errMsg = t.localizedMessage ?: "Terminal connection failed"
                 _state.value = TerminalState.Error(errMsg)
-                _outputFlow.tryEmit("\r\n[Connection Failed: $errMsg]\r\n")
+                emitText("\r\n\u001B[31m[Connection Failed: $errMsg]\u001B[0m\r\n")
             }
         })
     }
 
-    fun sendInput(input: String) {
-        if (directSession != null) {
-            directSession?.sendInput(input)
-        } else {
-            webSocket?.send(input)
+    fun sendBytes(bytes: ByteArray): Boolean {
+        val session = directSession
+        if (session != null) {
+            val result = session.sendBytes(bytes)
+            if (result.isFailure) {
+                try { session.close() } catch (_: Exception) {}
+                if (directSession === session) {
+                    directSession = null
+                }
+                if (_state.value == TerminalState.Connected) {
+                    _state.value = TerminalState.Disconnected
+                }
+                return false
+            }
+            return true
+        }
+        val ws = webSocket
+        if (ws != null) {
+            return ws.send(bytes.toString(Charsets.UTF_8))
+        }
+        return false
+    }
+
+    fun sendInput(input: String): Boolean {
+        return sendBytes(input.toByteArray(Charsets.UTF_8))
+    }
+
+    fun resize(cols: Int, rows: Int, widthPx: Int = 0, heightPx: Int = 0) {
+        if (cols <= 0 || rows <= 0) return
+        currentCols = cols
+        currentRows = rows
+        if (widthPx > 0) currentWidthPx = widthPx
+        if (heightPx > 0) currentHeightPx = heightPx
+
+        val session = directSession
+        if (session != null) {
+            scope.launch {
+                session.resize(cols, rows, currentWidthPx, currentHeightPx)
+            }
+        } else if (webSocket != null) {
+            sendResize(cols, rows)
         }
     }
 
@@ -159,10 +232,12 @@ class TerminalWebSocketManager {
     }
 
     fun disconnect() {
-        try { directSession?.close() } catch (_: Exception) {}
+        val session = directSession
         directSession = null
-        try { webSocket?.close(1000, "User closed terminal") } catch (_: Exception) {}
+        try { session?.close() } catch (_: Exception) {}
+        val ws = webSocket
         webSocket = null
+        try { ws?.close(1000, "User closed terminal") } catch (_: Exception) {}
         _state.value = TerminalState.Disconnected
     }
 }

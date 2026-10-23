@@ -2,6 +2,7 @@ package com.example.ui.viewmodel
 
 import android.app.Application
 import android.net.Uri
+import android.os.Looper
 import android.provider.OpenableColumns
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -11,6 +12,8 @@ import com.example.data.network.TerminalWebSocketManager
 import com.example.data.repository.ServerUIRepository
 import com.example.data.worker.BatteryOptimizationHelper
 import com.example.data.worker.ServerWatchdogForegroundService
+import com.example.ui.theme.ColorBody
+import com.example.ui.theme.ColorCanvasCard
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,6 +22,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import org.connectbot.terminal.TerminalEmulator
+import org.connectbot.terminal.TerminalEmulatorFactory
 
 data class UIState(
     val isCheckingBackend: Boolean = false,
@@ -57,7 +62,6 @@ data class UIState(
     val bookmarks: List<String> = emptyList(),
     val pendingShareFiles: List<PendingShareFile>? = null,
 
-    val terminalLines: List<String> = emptyList(),
     val terminalState: TerminalState = TerminalState.Disconnected,
 
     val isTestingDraft: Boolean = false,
@@ -82,6 +86,25 @@ class ServerUIViewModel(application: Application) : AndroidViewModel(application
     val repository = ServerUIRepository(application)
     val terminalManager = TerminalWebSocketManager()
 
+    val terminalEmulator: TerminalEmulator = TerminalEmulatorFactory.create(
+        looper = Looper.getMainLooper(),
+        initialRows = 24,
+        initialCols = 80,
+        defaultForeground = ColorBody,
+        defaultBackground = ColorCanvasCard,
+        onKeyboardInput = { bytes ->
+            sendTerminalBytes(bytes)
+        },
+        onResize = { dimensions ->
+            resizeTerminal(
+                cols = dimensions.columns,
+                rows = dimensions.rows,
+                widthPx = dimensions.widthPixels,
+                heightPx = dimensions.heightPixels
+            )
+        }
+    )
+
     private val _uiState = MutableStateFlow(
         UIState(
             sshTimeoutSeconds = repository.getSshTimeoutSeconds(),
@@ -101,19 +124,22 @@ class ServerUIViewModel(application: Application) : AndroidViewModel(application
     init {
         loadServers()
 
-        // Collect terminal output
+        // Feed raw terminal output bytes directly into libvterm emulator
         viewModelScope.launch {
-            terminalManager.outputFlow.collect { newChunk ->
-                _uiState.update { state ->
-                    val lines = (state.terminalLines + newChunk.split("\n"))
-                        .takeLast(500) // keep buffer bounded
-                    state.copy(terminalLines = lines)
-                }
+            terminalManager.outputFlow.collect { rawBytes ->
+                terminalEmulator.writeInput(rawBytes)
             }
         }
 
         viewModelScope.launch {
+            var wasConnected = false
             terminalManager.state.collect { termState ->
+                if (wasConnected && termState != TerminalState.Connected) {
+                    val closedLine = "\r\n\u001B[2m[session closed — tap ▶ to reconnect]\u001B[0m\r\n"
+                        .toByteArray(Charsets.UTF_8)
+                    terminalEmulator.writeInput(closedLine)
+                }
+                wasConnected = (termState == TerminalState.Connected)
                 _uiState.update { it.copy(terminalState = termState) }
             }
         }
@@ -975,6 +1001,10 @@ class ServerUIViewModel(application: Application) : AndroidViewModel(application
     fun connectTerminal() {
         val serverId = _uiState.value.selectedServerId ?: return
         val server = repository.localStore.getServer(serverId) ?: return
+        val dims = terminalEmulator.dimensions
+        if (dims.columns > 0 && dims.rows > 0) {
+            terminalManager.resize(dims.columns, dims.rows, dims.widthPixels, dims.heightPixels)
+        }
         terminalManager.connectDirect(server)
     }
 
@@ -982,12 +1012,20 @@ class ServerUIViewModel(application: Application) : AndroidViewModel(application
         terminalManager.disconnect()
     }
 
-    fun sendTerminalInput(input: String) {
-        terminalManager.sendInput(input)
+    fun sendTerminalBytes(bytes: ByteArray): Boolean {
+        return terminalManager.sendBytes(bytes)
+    }
+
+    fun sendTerminalInput(input: String): Boolean {
+        return terminalManager.sendInput(input)
+    }
+
+    fun resizeTerminal(cols: Int, rows: Int, widthPx: Int = 0, heightPx: Int = 0) {
+        terminalManager.resize(cols, rows, widthPx, heightPx)
     }
 
     fun clearTerminal() {
-        _uiState.update { it.copy(terminalLines = emptyList()) }
+        terminalEmulator.clearScreen()
     }
 
     // Historical Room Telemetry

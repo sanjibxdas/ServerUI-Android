@@ -19,11 +19,44 @@ class DirectTerminalSession(
     private val outputStream: OutputStream,
     val inputStream: InputStream
 ) {
-    fun sendInput(input: String) {
-        try {
-            outputStream.write(input.toByteArray(Charsets.UTF_8))
+    val isConnected: Boolean
+        get() = session.isConnected && channel.isConnected && !channel.isClosed && !channel.isEOF
+
+    @Synchronized
+    fun sendBytes(bytes: ByteArray): Result<Unit> {
+        return try {
+            if (!isConnected) {
+                return Result.failure(IllegalStateException("SSH terminal session is closed"))
+            }
+            outputStream.write(bytes)
             outputStream.flush()
-        } catch (_: Exception) {}
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    fun sendInput(input: String): Result<Unit> {
+        return sendBytes(input.toByteArray(Charsets.UTF_8))
+    }
+
+    fun resize(cols: Int, rows: Int, widthPx: Int, heightPx: Int): Result<Unit> {
+        return try {
+            if (!isConnected) {
+                return Result.failure(IllegalStateException("SSH terminal session is closed"))
+            }
+            if (cols > 0 && rows > 0) {
+                channel.setPtySize(
+                    cols,
+                    rows,
+                    widthPx.coerceAtLeast(0),
+                    heightPx.coerceAtLeast(0)
+                )
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     fun close() {
@@ -69,6 +102,8 @@ object SshDirectManager {
         config["PubkeyAcceptedAlgorithms"] = "ssh-ed25519,ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ecdsa-sha2-nistp521,rsa-sha2-512,rsa-sha2-256,ssh-rsa"
         session.setConfig(config)
         session.timeout = timeoutMs
+        session.setServerAliveInterval(30000)
+        session.setServerAliveCountMax(3)
         session.connect(timeoutMs)
         return session
     }
@@ -687,7 +722,13 @@ object SshDirectManager {
     }
 
     // Terminal PTY Session
-    fun startTerminal(server: SavedServer): Result<DirectTerminalSession> {
+    fun startTerminal(
+        server: SavedServer,
+        cols: Int = 80,
+        rows: Int = 24,
+        widthPx: Int = 640,
+        heightPx: Int = 480
+    ): Result<DirectTerminalSession> {
         return try {
             val session = createSession(
                 host = server.host,
@@ -699,7 +740,13 @@ object SshDirectManager {
                 timeoutMs = 12000
             )
             val channel = session.openChannel("shell") as ChannelShell
-            channel.setPtyType("xterm-256color", 80, 24, 640, 480)
+            channel.setPtyType(
+                "xterm-256color",
+                cols.coerceAtLeast(1),
+                rows.coerceAtLeast(1),
+                widthPx.coerceAtLeast(0),
+                heightPx.coerceAtLeast(0)
+            )
             val outputStream = channel.outputStream
             val inputStream = channel.inputStream
             channel.connect(10000)
