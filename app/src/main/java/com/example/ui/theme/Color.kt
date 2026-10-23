@@ -58,7 +58,6 @@ val CyanOnPrimaryContainer = ColorInk
 val GreenOnline = ColorStatusOnline
 val GreenContainer = Color(0xFF064E3B)
 val AmberWarn = ColorAccentSunset
-val ColorAccentAmber = ColorAccentSunset
 val AmberContainer = Color(0xFF78350F)
 val RoseError = ColorStatusError
 val RoseContainer = Color(0xFF7F1D1D)
